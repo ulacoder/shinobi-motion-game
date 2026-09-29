@@ -61,16 +61,80 @@ async function urlExists(url) {
   }
 }
 
-export async function createHandTracker(onStatus = () => {}) {
-  onStatus('Загружаю движок распознавания…');
-  const wasmBase = (await urlExists(`${LOCAL_WASM}/vision_wasm_internal.wasm`)) ? LOCAL_WASM : CDN_WASM;
-  const fileset = await FilesetResolver.forVisionTasks(wasmBase);
+// ---------- предзагрузка ----------
+// Модель (~7.8 МБ) и движок (~11.7 МБ) начинаем качать сразу при открытии страницы,
+// пока игрок читает заставку и разрешает камеру. Прогресс показываем в процентах.
 
-  onStatus('Загружаю модель рук…');
-  const modelPath = (await urlExists(LOCAL_MODEL)) ? LOCAL_MODEL : REMOTE_MODEL;
+const WASM_SIZE = 11756954;
+const MODEL_SIZE = 7819105;
+const progress = { model: 0, wasm: 0 };
+const listeners = new Set();
+let prefetchPromise = null;
+
+function emit() {
+  const total = (progress.model * MODEL_SIZE + progress.wasm * WASM_SIZE) / (MODEL_SIZE + WASM_SIZE);
+  for (const fn of listeners) fn(total);
+}
+
+async function download(url, size, key) {
+  const res = await fetch(url);
+  if (!res.ok || !res.body) throw new Error(`HTTP ${res.status}`);
+  const total = Number(res.headers.get('content-length')) || size;
+  const reader = res.body.getReader();
+  const chunks = [];
+  let loaded = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.length;
+    progress[key] = Math.min(0.99, loaded / total);
+    emit();
+  }
+  progress[key] = 1;
+  emit();
+  const out = new Uint8Array(loaded);
+  let off = 0;
+  for (const c of chunks) {
+    out.set(c, off);
+    off += c.length;
+  }
+  return out;
+}
+
+/** Начать скачивание модели и движка заранее. onProgress(0..1) можно вызывать много раз. */
+export function prefetchRecognition(onProgress) {
+  if (onProgress) listeners.add(onProgress);
+  if (!prefetchPromise) {
+    prefetchPromise = (async () => {
+      const localWasm = await urlExists(`${LOCAL_WASM}/vision_wasm_internal.wasm`);
+      const wasmBase = localWasm ? LOCAL_WASM : CDN_WASM;
+      // Движок кладём в HTTP-кэш браузера: MediaPipe потом возьмёт его оттуда.
+      const wasmDone = download(`${wasmBase}/vision_wasm_internal.wasm`, WASM_SIZE, 'wasm').catch(() => null);
+      const localModel = await urlExists(LOCAL_MODEL);
+      const model = await download(localModel ? LOCAL_MODEL : REMOTE_MODEL, MODEL_SIZE, 'model').catch(() => null);
+      await wasmDone;
+      return { wasmBase, model, modelPath: localModel ? LOCAL_MODEL : REMOTE_MODEL };
+    })();
+  }
+  return prefetchPromise;
+}
+
+export function stopProgress(onProgress) {
+  listeners.delete(onProgress);
+}
+
+export async function createHandTracker(onStatus = () => {}) {
+  onStatus('Загружаю распознавание рук…');
+  const report = (p) => onStatus(`Загружаю распознавание рук: ${Math.round(p * 100)}%`);
+  const pre = await prefetchRecognition(report);
+  stopProgress(report);
+  onStatus('Запускаю распознавание…');
+  const fileset = await FilesetResolver.forVisionTasks(pre.wasmBase);
+  const modelSource = pre.model ? { modelAssetBuffer: pre.model } : { modelAssetPath: pre.modelPath };
 
   const options = (delegate) => ({
-    baseOptions: { modelAssetPath: modelPath, delegate },
+    baseOptions: { ...modelSource, delegate },
     runningMode: 'VIDEO',
     numHands: 2,
     minHandDetectionConfidence: 0.5,

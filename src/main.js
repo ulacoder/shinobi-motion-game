@@ -8,7 +8,7 @@ import { BrightnessMeter, frameIssue } from './quality.js';
 import {
   Battle, TECHNIQUES, ULTIMATE, ENEMIES, STORY, STAGE_NAMES, PLAYER_MAX_HP, emptyStats, scoreRun, topMistakes,
 } from './battle.js';
-import { startCamera, createHandTracker, CameraError } from './tracker.js';
+import { startCamera, createHandTracker, CameraError, prefetchRecognition, stopProgress } from './tracker.js';
 import { Arena } from './fx.js';
 import { drawPortrait, drawHero } from './characters.js';
 import { sealIcon, techIcon } from './icons.js';
@@ -967,6 +967,14 @@ async function boot() {
 }
 
 $('btn-start').addEventListener('click', boot);
+
+// Модель рук начинаем качать сразу, пока игрок читает заставку.
+const introProgress = (p) => {
+  if (app.dataset.screen === 'intro' && !$('btn-start').disabled) {
+    $('intro-status').textContent = p < 1 ? `Готовлю распознавание рук: ${Math.round(p * 100)}%` : 'Распознавание рук готово';
+  }
+};
+prefetchRecognition(introProgress).then(() => stopProgress(introProgress));
 $('btn-retry').addEventListener('click', () => location.reload());
 
 // Если доступ к камере уже был разрешён раньше — стартуем без клика.
