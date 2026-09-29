@@ -100,6 +100,7 @@ FX = {
 }
 
 LOUD = 'loudnorm=I=-15:TP=-1.5:LRA=9'
+TARGET_LUFS = -15.5
 PAD = 'adelay=40:all=1,apad=pad_dur=0.25'
 
 
@@ -128,9 +129,23 @@ def process(src: Path, line_id: str, out_dir: Path) -> Path:
         cut = Path(tmp) / 'cut.wav'
         run(['ffmpeg', '-y', '-i', str(src), '-ac', '1', '-ar', str(SR), '-af', CLEAN, str(clean)])
         write_wav(cut, gate_trim(decode(clean)))
-        run(['ffmpeg', '-y', '-i', str(cut), '-af', f'{fx},{LOUD},{PAD}', '-ar', '44100', '-ac', '1',
-             '-codec:a', 'libmp3lame', '-b:a', '112k', str(dst)])
+        styled = Path(tmp) / 'styled.wav'
+        run(['ffmpeg', '-y', '-i', str(cut), '-af', f'{fx},{LOUD},{PAD}', '-ar', '44100', '-ac', '1', str(styled)])
+        # loudnorm на коротких фразах иногда промахивается — добиваем громкость точно до цели
+        gain = TARGET_LUFS - measure_lufs(styled)
+        run(['ffmpeg', '-y', '-i', str(styled), '-af', f'volume={gain:.2f}dB,alimiter=limit=0.89', '-ar', '44100',
+             '-ac', '1', '-codec:a', 'libmp3lame', '-b:a', '112k', str(dst)])
     return dst
+
+
+def measure_lufs(path: Path) -> float:
+    out = subprocess.run(['ffmpeg', '-hide_banner', '-i', str(path), '-af', 'ebur128', '-f', 'null', '-'],
+                         stderr=subprocess.PIPE, text=True).stderr
+    for line in reversed(out.splitlines()):
+        line = line.strip()
+        if line.startswith('I:'):
+            return float(line.split()[1])
+    return TARGET_LUFS
 
 
 def main():
