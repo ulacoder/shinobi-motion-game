@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#151735" />
+    <meta name="description" content="Складывай печати руками перед веб-камерой и побеждай Они. Игра без клавиатуры и мыши." />
+    <title>Путь печатей</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect x='6' y='6' width='52' height='52' rx='10' fill='%23cc3325'/><text x='32' y='45' font-size='34' text-anchor='middle' fill='%23efe6cf' font-family='serif'>印</text></svg>" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Manrope:wght@400;500;700;800&family=Unbounded:wght@600;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@800&text=%E5%AF%85%E5%B7%B3%E9%85%89%E6%88%8C%E8%BE%B0%E5%86%86%E7%81%AB%E9%9B%B7%E6%B0%B4%E5%8D%B0%E5%B8%AB%E9%AC%BC%E9%81%93&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <div id="app" data-screen="intro">
+      <!-- Сцена боя и фон для всех экранов -->
+      <canvas id="arena" aria-hidden="true"></canvas>
+
+      <!-- Камера: одно видео на всё приложение, переезжает между экранами -->
+      <div id="cam" class="cam" aria-label="Изображение с камеры">
+        <video id="video" playsinline muted></video>
+        <canvas id="overlay"></canvas>
+        <div id="cam-seal" class="cam-seal" hidden>
+          <span class="cam-seal-glyph"></span>
+          <span class="cam-seal-acc"></span>
+        </div>
+      </div>
+
+      <!-- 1. Вход -->
+      <section id="screen-intro" class="screen">
+        <div class="intro">
+          <div class="intro-mark" aria-hidden="true">道</div>
+          <h1 class="title">Путь печатей</h1>
+          <p class="lead">
+            Улагат, Таир и Данияр против клана Затмения. Складывай печати руками перед камерой,
+            собирай их в техники и комбо. Клавиатура и мышь не нужны.
+          </p>
+          <button id="btn-start" class="btn-primary" type="button">Включить камеру</button>
+          <p id="intro-status" class="status" role="status" aria-live="polite"></p>
+          <p class="fineprint">Видео обрабатывается прямо в браузере и никуда не отправляется.</p>
+        </div>
+      </section>
+
+      <!-- 2. Ошибка камеры -->
+      <section id="screen-error" class="screen">
+        <div class="scroll error-card">
+          <h2>Камера не включилась</h2>
+          <p id="error-text"></p>
+          <button id="btn-retry" class="btn-primary" type="button">Попробовать снова</button>
+        </div>
+      </section>
+
+      <!-- 3. Меню -->
+      <section id="screen-menu" class="screen">
+        <header class="menu-head">
+          <h1 class="title title-sm">Путь печатей</h1>
+          <p class="subtitle">Подпешки → пешки → Кагэро, владыка клана Затмения</p>
+          <p class="lead">Покажи жест и держи секунду, чтобы выбрать.</p>
+        </header>
+        <div class="choices">
+          <button class="choice" data-choice="snake" type="button">
+            <span class="choice-icon" data-seal="snake"></span>
+            <span class="choice-text">
+              <strong>Обучение в додзё</strong>
+              <span>Раскрой обе ладони рядом</span>
+            </span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+          </button>
+          <button class="choice" data-choice="tiger" type="button">
+            <span class="choice-icon" data-seal="tiger"></span>
+            <span class="choice-text">
+              <strong>Сюжет: сразу в бой</strong>
+              <span>Обе руки: указательный и средний вверх</span>
+            </span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+          </button>
+        </div>
+        <aside class="records scroll" aria-label="Таблица рекордов">
+          <h2>Рекорды</h2>
+          <ol id="records-menu" class="records-list"></ol>
+        </aside>
+      </section>
+
+      <!-- 4. Додзё -->
+      <section id="screen-dojo" class="screen">
+        <ol id="dojo-steps" class="steps" aria-label="Уроки"></ol>
+        <article class="scroll lesson" aria-live="polite">
+          <div class="lesson-head">
+            <span id="lesson-hanko" class="hanko hanko-lg">寅</span>
+            <span id="lesson-icon" class="lesson-icon" aria-hidden="true"></span>
+            <div>
+              <p id="lesson-kicker" class="kicker">Печать 1 из 5</p>
+              <h2 id="lesson-name">Тигр</h2>
+            </div>
+          </div>
+          <p id="lesson-how" class="lesson-how"></p>
+          <div id="lesson-checks" class="checks"></div>
+          <div class="meter" aria-hidden="true">
+            <div id="lesson-meter" class="meter-fill"></div>
+            <span class="meter-pass"></span>
+          </div>
+          <p class="meter-label"><span id="lesson-acc">0%</span> совпадение <span id="lesson-fix" class="best"></span> <span id="lesson-best" class="best"></span></p>
+          <div id="lesson-done" class="lesson-done" hidden>
+            <p>Техники, которые ты теперь знаешь:</p>
+            <ul id="lesson-techs" class="tech-list"></ul>
+            <p class="next-cue"><span class="hanko hanko-sm">巳</span> Раскрой обе ладони, чтобы начать бой</p>
+          </div>
+        </article>
+        <button id="btn-skip" class="btn-ghost" type="button">Пропустить урок</button>
+      </section>
+
+      <!-- 5. Бой -->
+      <section id="screen-battle" class="screen">
+        <div class="hud-top">
+          <div class="fighter fighter-hero">
+            <canvas id="portrait-hero" class="portrait" width="120" height="120"></canvas>
+            <div class="fighter-info">
+              <span class="fighter-name">Улагат</span>
+              <div class="bar"><div id="hp-player" class="bar-fill bar-player"></div></div>
+            </div>
+          </div>
+          <div class="stage">
+            <span id="stage-label" class="stage-label">Этап 1</span>
+            <span id="stage-name" class="stage-name">Подпешки</span>
+            <span id="stage-dots" class="stage-dots"></span>
+          </div>
+          <div class="fighter fighter-enemy">
+            <div class="fighter-info">
+              <span class="fighter-name"><span id="enemy-name">Мукадэ</span> <small id="enemy-title"></small></span>
+              <div class="bar"><div id="hp-enemy" class="bar-fill bar-boss"></div></div>
+            </div>
+            <canvas id="portrait-enemy" class="portrait" width="120" height="120"></canvas>
+          </div>
+        </div>
+        <div id="countdown" class="countdown" hidden></div>
+        <aside class="techs scroll" aria-label="Техники">
+          <h2>Техники</h2>
+          <ul id="battle-techs" class="tech-list"></ul>
+          <div class="chakra">
+            <div class="chakra-label"><span>Чакра</span><span id="chakra-val">0%</span></div>
+            <div class="bar bar-thin"><div id="chakra" class="bar-fill bar-chakra"></div></div>
+          </div>
+        </aside>
+        <div class="chain" aria-live="polite">
+          <div id="chain" class="chain-seals"></div>
+        </div>
+        <div id="combo" class="combo" aria-live="polite" hidden>
+          <span class="combo-count"></span>
+          <span class="combo-special"></span>
+        </div>
+      </section>
+
+      <!-- 5б. Сюжетная сцена -->
+      <section id="screen-scene" class="screen">
+        <div id="title-card" class="title-card" hidden></div>
+        <div class="manga">
+          <canvas id="scene-portrait" class="scene-portrait" width="420" height="420"></canvas>
+          <div class="bubble">
+            <span id="scene-who" class="bubble-who"></span>
+            <p id="scene-text"></p>
+            <div class="bubble-foot">
+              <span class="skip-cue"><span class="choice-icon choice-icon-sm" data-seal="snake"></span> Раскрой ладони — дальше</span>
+              <div class="bubble-timer"><div id="scene-timer"></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 6. Итоги -->
+      <section id="screen-results" class="screen">
+        <article class="scroll results">
+          <p id="res-kicker" class="kicker">Бой окончен</p>
+          <h2 id="res-title">Победа</h2>
+          <p class="score"><span id="res-score">0</span> очков</p>
+          <p id="res-stage" class="res-stage"></p>
+          <dl id="res-stats" class="stats"></dl>
+          <div class="gallery">
+            <h3>Твои лучшие печати</h3>
+            <div id="res-forms" class="gallery-forms"></div>
+          </div>
+          <div class="mistakes">
+            <h3>Над чем поработать</h3>
+            <ul id="res-mistakes"></ul>
+          </div>
+          <div class="records">
+            <h3>Рекорды</h3>
+            <ol id="records-results" class="records-list"></ol>
+          </div>
+        </article>
+        <div class="choices choices-row">
+          <button class="choice" data-choice="snake" type="button">
+            <span class="choice-icon" data-seal="snake"></span>
+            <span class="choice-text"><strong>Заново</strong><span>Раскрой обе ладони</span></span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+          </button>
+          <button class="choice" data-choice="tiger" type="button">
+            <span class="choice-icon" data-seal="tiger"></span>
+            <span class="choice-text"><strong>В додзё</strong><span>Покажи Тигра</span></span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Сенсей: подсказки режима ошибки -->
+      <div id="sensei" class="sensei" role="status" aria-live="polite" hidden>
+        <span class="sensei-mark" aria-hidden="true">師</span>
+        <p id="sensei-text"></p>
+      </div>
+
+      <!-- Кат-ин техники, как в аниме -->
+      <div id="cutin" class="cutin" aria-hidden="true">
+        <canvas id="cutin-face" width="360" height="160"></canvas>
+        <div id="cutin-forms" class="cutin-forms"></div>
+        <div class="cutin-text">
+          <span id="cutin-kanji" class="cutin-kanji"></span>
+          <span id="cutin-name" class="cutin-name"></span>
+          <span id="cutin-desc" class="cutin-desc"></span>
+        </div>
+        <div class="cutin-flash"></div>
+      </div>
+
+      <!-- Большая печать-штамп при распознавании -->
+      <div id="stamp" class="stamp" aria-hidden="true"></div>
+
+      <button id="btn-sound" class="icon-btn" type="button" aria-pressed="true" title="Звук">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" /><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" /></svg>
+        <span class="sr-only">Звук</span>
+      </button>
+
+      <pre id="debug" class="debug" hidden></pre>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
