@@ -105,13 +105,15 @@ function reportFrameIssue(now) {
 let run = null;
 const sceneLog = [];
 
-function startStory() {
+/** quick — быстрый бой: сразу к главному злодею, с запасом чакры (для жюри и демо). */
+function startStory({ quick = false } = {}) {
   run = {
-    step: 0,
+    step: quick ? STORY.findIndex((s) => s.type === 'fight' && ENEMIES[s.enemy].boss) : 0,
+    quick,
     stats: emptyStats(),
     mistakes: new Map(),
     playerHp: PLAYER_MAX_HP,
-    chakra: 0,
+    chakra: quick ? 60 : 0,
     startedAt: performance.now(),
     name: randomNinjaName(),
     combo: { count: 0, lastAt: -Infinity, lastTech: null },
@@ -146,6 +148,7 @@ function finishRun(win, reason) {
     stage: step.stage,
     name: run.name,
     bestForms: run.bestForms,
+    quick: run.quick,
   });
 }
 
@@ -157,6 +160,7 @@ const menu = {
     this.choice ??= new GestureChoice($('screen-menu'), {
       snake: () => go('dojo'),
       tiger: () => startStory(),
+      bird: () => startStory({ quick: true }),
     });
     this.choice.reset();
     sensei.clear();
@@ -605,7 +609,8 @@ const fight = {
     let k = 0;
     for (const s of STORY) {
       if (s.type !== 'fight') continue;
-      const i = el('i', k < run.stats.defeated ? 'done' : s === step ? 'now' : '');
+      const before = STORY.indexOf(s) < run.step;
+      const i = el('i', s === step ? 'now' : k < run.stats.defeated || (run.quick && before) ? 'done' : '');
       dots.append(i);
       k++;
     }
@@ -870,7 +875,9 @@ const results = {
     $('res-kicker').textContent = res.reason;
     $('res-title').textContent = res.win ? 'Победа' : 'Поражение';
     $('res-score').textContent = String(res.score);
-    $('res-stage').textContent = res.win
+    $('res-stage').textContent = res.quick
+      ? res.win ? 'Быстрый бой: Кагэро повержен. Полный сюжет — «Сюжет» в меню' : 'Быстрый бой с Кагэро'
+      : res.win
       ? `Пройдены все 3 этапа, повержено врагов: ${res.stats.defeated} из ${FIGHTS_TOTAL}`
       : `Этап ${res.stage} · ${STAGE_NAMES[res.stage]} · повержено врагов: ${res.stats.defeated} из ${FIGHTS_TOTAL}`;
     const s = res.stats;
@@ -995,6 +1002,18 @@ soundBtn.addEventListener('click', () => {
 addEventListener('pointerdown', unlockAudio, { once: true });
 
 // Отладка: клавиша D или ?debug в адресе — показывает сырые признаки пальцев.
+// Запасное управление с клавиатуры: 1–3 — пункты меню и итогов, пробел/Enter — следующая реплика.
+addEventListener('keydown', (e) => {
+  const screen = app.dataset.screen;
+  if ((screen === 'menu' || screen === 'results') && /^[1-3]$/.test(e.key)) {
+    const buttons = [...$(`screen-${screen}`).querySelectorAll('[data-choice]')];
+    buttons[Number(e.key) - 1]?.click();
+  } else if (screen === 'scene' && (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight')) {
+    e.preventDefault();
+    scene.skip(performance.now());
+  }
+});
+
 addEventListener('keydown', (e) => {
   if (e.key === 'd' || e.key === 'в') {
     debug = !debug;

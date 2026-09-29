@@ -63,7 +63,7 @@
         <header class="menu-head">
           <h1 class="title title-sm">Путь печатей</h1>
           <p class="subtitle">Подпешки → пешки → Кагэро, владыка клана Затмения</p>
-          <p class="lead">Покажи жест и держи секунду, чтобы выбрать.</p>
+          <p class="lead">Покажи жест и держи секунду, чтобы выбрать. Можно и мышкой или клавишами 1–3.</p>
         </header>
         <div class="choices">
           <button class="choice" data-choice="snake" type="button">
@@ -79,6 +79,14 @@
             <span class="choice-text">
               <strong>Сюжет: сразу в бой</strong>
               <span>Обе руки: указательный и средний вверх</span>
+            </span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+          </button>
+          <button class="choice" data-choice="bird" type="button">
+            <span class="choice-icon" data-seal="bird"></span>
+            <span class="choice-text">
+              <strong>Быстрый бой с боссом</strong>
+              <span>2–3 минуты. Обе руки: большой палец и мизинец в стороны</span>
             </span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
@@ -167,7 +175,7 @@
             <span id="scene-who" class="bubble-who"></span>
             <p id="scene-text"></p>
             <div class="bubble-foot">
-              <span class="skip-cue"><span class="choice-icon choice-icon-sm" data-seal="snake"></span> Раскрой ладони — дальше</span>
+              <span class="skip-cue"><span class="choice-icon choice-icon-sm" data-seal="snake"></span> Раскрой ладони, кликни или нажми пробел — дальше</span>
               <div class="bubble-timer"><div id="scene-timer"></div></div>
             </div>
           </div>

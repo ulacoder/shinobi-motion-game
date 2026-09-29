@@ -1143,6 +1143,10 @@ button {
     width: calc(100% - 2 * var(--gutter));
   }
 
+  .menu-head .lead {
+    display: none;
+  }
+
   #app[data-screen='dojo'] .cam {
     top: calc(var(--gutter) + 50px);
   }
