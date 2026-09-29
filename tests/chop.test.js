@@ -45,10 +45,10 @@ test('подняли ладонь и опустили — засчитывает
   assert.ok(chop.power >= 0.6 && chop.power <= 1);
 });
 
-test('медленное движение — подсказка «быстрее»', () => {
+test('медленное движение — подсказка «смелее»', () => {
   const ev = swing(new ChopDetector(), { ms: 1300 });
   assert.equal(ev.some((e) => e.type === 'chop'), false);
-  assert.ok(ev.some((e) => e.type === 'hint' && /Быстрее/.test(e.hint)), JSON.stringify(ev));
+  assert.ok(ev.some((e) => e.type === 'hint' && /Смелее/.test(e.hint)), JSON.stringify(ev));
 });
 
 test('кулаком — подсказка раскрыть ладонь', () => {
