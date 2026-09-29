@@ -1960,3 +1960,532 @@ button {
     display: none;
   }
 }
+
+/* ======================================================================
+   Телефон (вертикально): компактная раскладка.
+   Всё подобрано так, чтобы на экране 360–430 px были видны враг, камера,
+   цепочка печатей и техники одновременно, без наложений.
+   ====================================================================== */
+
+@media (max-width: 820px), (max-aspect-ratio: 1/1) {
+  :root {
+    --gutter: 10px;
+  }
+
+  html,
+  body {
+    font-size: 14px;
+  }
+
+  .icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  /* --- заставка --- */
+  .intro-mark {
+    font-size: 3.2rem;
+  }
+
+  .title {
+    font-size: 2.3rem;
+  }
+
+  .btn-primary {
+    margin-top: 1.1rem;
+    padding: 0.8rem 1.3rem;
+    font-size: 1rem;
+  }
+
+  /* --- сенсей: компактная плашка --- */
+  .sensei {
+    gap: 8px;
+    padding: 7px 12px 7px 7px;
+    border-radius: 10px;
+    max-width: calc(100vw - 2 * var(--gutter));
+  }
+
+  .sensei p {
+    font-size: 0.85rem;
+    line-height: 1.3;
+  }
+
+  .sensei-mark {
+    width: 28px;
+    height: 28px;
+    font-size: 15px;
+  }
+
+  /* --- меню --- */
+  .title-sm {
+    font-size: 1.5rem;
+  }
+
+  .subtitle {
+    font-size: 0.75rem;
+  }
+
+  #app[data-screen='menu'] .cam {
+    top: calc(var(--gutter) + 62px);
+    width: min(calc(100% - 2 * var(--gutter)), calc(30vh * var(--cam-ar)));
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  #app[data-screen='menu'] .sensei {
+    top: auto;
+    bottom: auto;
+    top: calc(var(--gutter) + 70px + min(100vw - 2 * var(--gutter), 30vh * var(--cam-ar)) / var(--cam-ar));
+  }
+
+  .choices {
+    gap: 8px;
+    bottom: calc(var(--gutter) + 66px);
+  }
+
+  .choice {
+    gap: 10px;
+    padding: 8px 48px 8px 8px;
+  }
+
+  .choice-icon {
+    width: 44px;
+    height: 38px;
+    border-radius: 8px;
+  }
+
+  .choice-text strong {
+    font-size: 0.92rem;
+  }
+
+  .choice-text span {
+    font-size: 0.75rem;
+    line-height: 1.3;
+  }
+
+  .ring {
+    width: 30px;
+    height: 30px;
+    right: 10px;
+  }
+
+  #screen-menu .records {
+    padding: 8px 12px;
+    bottom: calc(var(--gutter) + 4px);
+  }
+
+  #screen-menu .records h2 {
+    font-size: 0.85rem;
+  }
+
+  #screen-menu .records-list {
+    font-size: 0.78rem;
+    max-height: 1.4em;
+    overflow: hidden;
+  }
+
+  /* --- додзё --- */
+  .steps li {
+    width: 28px;
+    height: 28px;
+    font-size: 15px;
+  }
+
+  #app[data-screen='dojo'] .cam {
+    top: calc(var(--gutter) + 38px);
+    width: min(calc(100% - 2 * var(--gutter)), calc(30vh * var(--cam-ar)));
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  #app[data-screen='dojo'] .sensei {
+    top: calc(var(--gutter) + 44px + min(100vw - 2 * var(--gutter), 30vh * var(--cam-ar)) / var(--cam-ar));
+  }
+
+  .lesson {
+    bottom: calc(var(--gutter) + 40px);
+    max-height: 46%;
+    padding: 12px 14px;
+  }
+
+  .hanko-lg {
+    width: 52px;
+    height: 52px;
+    font-size: 32px;
+    border-radius: 8px;
+  }
+
+  .lesson-icon {
+    width: 72px;
+    height: 60px;
+  }
+
+  .lesson-head {
+    gap: 10px;
+  }
+
+  .scroll h2 {
+    font-size: 1.2rem;
+  }
+
+  .lesson-how {
+    font-size: 0.85rem;
+    margin: 0.5rem 0;
+  }
+
+  .chip {
+    font-size: 0.72rem;
+    padding: 2px 6px;
+  }
+
+  .meter {
+    margin-top: 0.6rem;
+  }
+
+  .btn-ghost {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.75rem;
+  }
+
+  .stamp {
+    width: 110px;
+    height: 110px;
+    margin: -55px 0 0 -55px;
+    font-size: 72px;
+    border-radius: 14px;
+  }
+
+  /* --- бой: верхняя панель --- */
+  .hud-top {
+    gap: 6px;
+    padding-right: 40px;
+  }
+
+  .fighter {
+    gap: 6px;
+  }
+
+  .fighter .portrait {
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
+  }
+
+  .fighter-name {
+    font-size: 0.78rem;
+  }
+
+  .fighter .bar {
+    height: 10px;
+  }
+
+  .stage-label {
+    display: none;
+  }
+
+  .stage-name {
+    font-size: 0.72rem;
+  }
+
+  .stage-dots i {
+    width: 7px;
+    height: 7px;
+  }
+
+  #app[data-screen='battle'] .sensei {
+    top: calc(var(--gutter) + 46px);
+  }
+
+  /* --- бой: техники полосой внизу во всю ширину --- */
+  .techs {
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: var(--gutter);
+    width: auto;
+    padding: 6px 8px 8px;
+  }
+
+  .techs h2 {
+    display: none;
+  }
+
+  .techs::before,
+  .techs::after {
+    height: 6px;
+  }
+
+  #battle-techs {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  #battle-techs .tech {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 2px;
+    padding: 4px 2px;
+    text-align: center;
+  }
+
+  #battle-techs .tech-glyph {
+    grid-row: auto;
+  }
+
+  #battle-techs .tech-glyph svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  #battle-techs .tech-name {
+    font-size: 0.66rem;
+    line-height: 1.1;
+  }
+
+  #battle-techs .tech-seq {
+    gap: 2px;
+    font-size: 0.6rem;
+  }
+
+  #battle-techs .tech-seq > span:not(.seal-mini) {
+    display: none;
+  }
+
+  #battle-techs .tech-seq .seal-mini {
+    display: inline-grid;
+    width: 24px;
+    height: 20px;
+  }
+
+  #battle-techs .tech.ultimate .tech-seq {
+    display: none;
+  }
+
+  .chakra {
+    margin-top: 4px;
+  }
+
+  .chakra-label {
+    font-size: 0.66rem;
+    margin-bottom: 2px;
+  }
+
+  /* --- бой: камера слева над полосой техник, цепочка справа --- */
+  #app[data-screen='battle'] .cam {
+    left: var(--gutter);
+    top: auto;
+    bottom: calc(var(--gutter) + 116px);
+    width: 44vw;
+    transform: none;
+  }
+
+  .chain {
+    left: auto;
+    right: var(--gutter);
+    bottom: calc(var(--gutter) + 120px);
+    transform: none;
+  }
+
+  .chain-seals {
+    gap: 4px;
+    min-height: 0;
+  }
+
+  .form-card {
+    width: 54px;
+    height: 42px;
+  }
+
+  .hanko-corner {
+    width: 18px;
+    height: 18px;
+    font-size: 11px;
+    right: -5px;
+    top: -5px;
+  }
+
+  #app[data-screen='battle'] .icon-btn {
+    bottom: auto;
+    top: calc(var(--gutter) * 0.6);
+  }
+
+  .combo {
+    right: var(--gutter);
+    top: 22%;
+  }
+
+  .combo-count {
+    font-size: 1.9rem;
+  }
+
+  .combo-special {
+    font-size: 0.9rem;
+  }
+
+  .countdown {
+    font-size: 5rem;
+  }
+
+  /* --- кат-ин --- */
+  .cutin {
+    top: 30%;
+    height: 96px;
+    gap: 10px;
+    padding-left: 12%;
+    border-width: 4px;
+  }
+
+  .cutin canvas {
+    height: 76px;
+    border-width: 3px;
+  }
+
+  .cutin-forms canvas {
+    width: 56px;
+    height: 42px;
+  }
+
+  .cutin-kanji {
+    font-size: 34px;
+  }
+
+  .cutin-name {
+    font-size: 1.3rem;
+  }
+
+  /* --- сюжетные сцены --- */
+  .manga {
+    bottom: var(--gutter);
+  }
+
+  .scene-portrait {
+    width: 38vw;
+    border-width: 3px;
+  }
+
+  .bubble {
+    margin-top: 14px;
+    padding: 16px 16px 10px;
+    border-width: 3px;
+    border-radius: 18px;
+  }
+
+  .bubble p {
+    font-size: 1rem;
+    min-height: 2.8em;
+    margin: 0.3rem 0 0.5rem;
+  }
+
+  .bubble-who {
+    font-size: 0.85rem;
+    top: -14px;
+    left: 14px;
+  }
+
+  .bubble-foot {
+    font-size: 0.7rem;
+  }
+
+  .title-card {
+    font-size: 2rem;
+  }
+
+  #app[data-screen='scene'] .cam {
+    width: 30vw;
+  }
+
+  /* --- итоги --- */
+  .results {
+    top: var(--gutter);
+    transform: translateX(-50%);
+    max-height: calc(100% - 2 * var(--gutter) - 76px);
+    padding: 14px;
+  }
+
+  .results h2 {
+    font-size: 1.7rem;
+  }
+
+  .score {
+    font-size: 1.05rem;
+  }
+
+  .stats {
+    gap: 4px 10px;
+  }
+
+  .stats dd {
+    font-size: 0.95rem;
+  }
+
+  .gallery-form canvas {
+    width: 64px;
+    height: 48px;
+  }
+
+  .choices-row {
+    bottom: var(--gutter);
+    top: auto;
+    left: var(--gutter);
+    right: var(--gutter);
+    width: auto;
+    transform: none;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .choices-row .choice {
+    padding-right: 38px;
+  }
+
+  .choices-row .choice-text span {
+    display: none;
+  }
+
+  .choices-row .ring {
+    width: 24px;
+    height: 24px;
+    right: 8px;
+  }
+}
+
+/* Совсем низкие экраны (телефон горизонтально): только самое нужное */
+@media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+  html,
+  body {
+    font-size: 13px;
+  }
+
+  .hud-top .portrait {
+    width: 34px;
+    height: 34px;
+  }
+
+  #app[data-screen='battle'] .cam {
+    width: min(30vw, calc(38vh * var(--cam-ar)));
+  }
+
+  .techs {
+    width: min(240px, 28vw);
+    padding: 8px;
+  }
+
+  .techs .tech-desc,
+  .techs h2 {
+    display: none;
+  }
+
+  .tech {
+    padding: 3px;
+  }
+
+  .cutin {
+    height: 100px;
+  }
+
+  .cutin canvas {
+    height: 80px;
+  }
+
+  .sensei p {
+    font-size: 0.85rem;
+  }
+}
