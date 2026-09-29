@@ -297,7 +297,7 @@ export function renderTechList(
       const g2 = el('span', 'tech-glyph');
       g2.innerHTML = techIcon('dragon', 36);
       d.append(g2, el('span', 'tech-name', DRAGON.name));
-      d.append(el('span', 'tech-seq', ultimateReady ? 'Руби ладонью сверху вниз!' : 'Накопи чакру до 100%'));
+      d.append(el('span', 'tech-seq', ultimateReady ? 'Подними ладонь и опусти!' : 'Накопи чакру до 100%'));
       if (showDesc) d.append(el('span', 'tech-desc', DRAGON.desc));
       ul.append(d);
     }

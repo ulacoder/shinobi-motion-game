@@ -212,7 +212,7 @@ const dojo = {
     LESSONS.forEach((l, i) => {
       const glyph = lessonGlyph(l);
       const li = el('li', i < this.idx || this.finished ? 'done' : i === this.idx ? 'current' : '', glyph);
-      li.title = l.type === 'seal' ? SEALS[l.id].name : l.type === 'chop' ? 'Удар ребром ладони' : 'Круг';
+      li.title = l.type === 'seal' ? SEALS[l.id].name : l.type === 'chop' ? 'Ладонь вверх-вниз' : 'Круг';
       ol.append(li);
     });
   },
@@ -235,9 +235,9 @@ const dojo = {
       $('lesson-hanko').textContent = '斬';
       $('lesson-icon').innerHTML = techIcon('dragon', 80);
       $('lesson-kicker').textContent = 'Удар для сундуков и ультимейта';
-      $('lesson-name').textContent = 'Удар ребром ладони';
+      $('lesson-name').textContent = 'Ладонь вверх-вниз';
       $('lesson-how').textContent =
-        'Раскрой ладонь, пальцы вместе, как лезвие. Подними руку выше головы и резко опусти вниз, как топор. Так открываются бамбуковые сундуки и работает «Удар дракона».';
+        'Просто подними раскрытую ладонь над головой и быстро опусти вниз. Так открываются бамбуковые сундуки и работает «Удар дракона».';
       $('lesson-best').textContent = best.chop ? `· лучший результат ${pct(best.chop)}` : '';
     } else {
       $('lesson-hanko').textContent = ULTIMATE.glyph;
@@ -356,13 +356,13 @@ const dojo = {
         const row = el('div', 'check-row');
         const ok1 = blade && blade.straight > 0.55;
         const ok2 = blade && blade.together > 0.5;
-        row.append(el('span', `chip ${ok1 ? 'ok' : 'bad'}`, `${ok1 ? '✓' : '✗'} пальцы прямые`));
-        row.append(el('span', `chip ${ok2 ? 'ok' : 'bad'}`, `${ok2 ? '✓' : '✗'} пальцы вместе`));
-        row.append(el('span', 'chip', '· резко сверху вниз'));
+        row.append(el('span', `chip ${ok1 ? 'ok' : 'bad'}`, `${ok1 ? '✓' : '✗'} ладонь раскрыта`));
+        row.append(el('span', `chip ${ok2 ? 'ok' : 'bad'}`, `${ok2 ? '✓' : '✗'} пальцы рядом`));
+        row.append(el('span', 'chip', '· подними и опусти вниз'));
         checks.append(row);
         this.lastRender = now;
       }
-      if (!hands.length && !issue) sensei.show('Подними руку с раскрытой ладонью выше головы', 'info', now);
+      if (!hands.length && !issue) sensei.show('Подними раскрытую ладонь над головой', 'info', now);
       for (const e of this.chop.update(hands, now, handsStamp)) {
         if (e.type === 'chop') {
           sfx.chop(e.power);
@@ -746,7 +746,7 @@ const fight = {
           renderTechList($('battle-techs'), this.techOpts({ chain: b.chain, ultimateReady: true }));
           sensei.show(
             run.unlocked.includes('dragon')
-              ? 'Чакра полная! Руби ладонью сверху вниз — Удар дракона. Или нарисуй пальцем круг'
+              ? 'Чакра полная! Подними ладонь и опусти — Удар дракона. Или нарисуй пальцем круг'
               : 'Чакра полная! Оставь одну руку и нарисуй указательным пальцем круг',
             'good',
             now,
@@ -1036,7 +1036,7 @@ const chest = {
     music.setIntensity(1);
     this.render();
     sfx.title();
-    sensei.show('Бамбуковый сундук! Разбей его: раскрытая ладонь ребром, резко сверху вниз', 'info', performance.now(), { ttl: 4000, lock: 1500 });
+    sensei.show('Бамбуковый сундук! Подними ладонь и опусти вниз — три раза, и он откроется', 'info', performance.now(), { ttl: 4000, lock: 1500 });
     this.onClick ??= () => this.hit(0.8, performance.now());
     $('screen-chest').addEventListener('click', this.onClick);
   },
@@ -1102,7 +1102,7 @@ const chest = {
         sensei.show(e.hint, 'warn', now, { lock: 1500, ttl: 3000 });
       }
     }
-    if (!hands.length && !issue) sensei.show('Подними раскрытую ладонь выше головы и руби вниз', 'info', now);
+    if (!hands.length && !issue) sensei.show('Подними ладонь над головой и опусти вниз', 'info', now);
   },
 };
 

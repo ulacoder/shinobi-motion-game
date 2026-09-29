@@ -31,36 +31,36 @@ function swing(det, { state = SHAPES.open, y0 = 0.15, y1 = 0.6, ms = 180, cx = 0
   return events;
 }
 
-test('раскрытая ладонь — «лезвие», кулак — нет', () => {
+test('раскрытая ладонь засчитывается, кулак — нет', () => {
   const open = buildHands(makeResult([{ state: SHAPES.open, cx: 0.5, cy: 0.4 }]), ASPECT)[0];
   const fist = buildHands(makeResult([{ state: SHAPES.fist, cx: 0.5, cy: 0.4 }]), ASPECT)[0];
   assert.ok(bladeScore(open).score > 0.6, `ладонь ${bladeScore(open).score}`);
   assert.ok(bladeScore(fist).score < 0.5, `кулак ${bladeScore(fist).score}`);
 });
 
-test('резкий удар ладонью сверху вниз засчитывается', () => {
+test('подняли ладонь и опустили — засчитывается', () => {
   const ev = swing(new ChopDetector());
   const chop = ev.find((e) => e.type === 'chop');
   assert.ok(chop, JSON.stringify(ev));
   assert.ok(chop.power >= 0.6 && chop.power <= 1);
 });
 
-test('медленное движение — подсказка «резче»', () => {
+test('медленное движение — подсказка «быстрее»', () => {
   const ev = swing(new ChopDetector(), { ms: 1300 });
   assert.equal(ev.some((e) => e.type === 'chop'), false);
-  assert.ok(ev.some((e) => e.type === 'hint' && /Резче/.test(e.hint)), JSON.stringify(ev));
+  assert.ok(ev.some((e) => e.type === 'hint' && /Быстрее/.test(e.hint)), JSON.stringify(ev));
 });
 
-test('удар кулаком — подсказка раскрыть ладонь', () => {
+test('кулаком — подсказка раскрыть ладонь', () => {
   const ev = swing(new ChopDetector(), { state: SHAPES.fist });
   assert.equal(ev.some((e) => e.type === 'chop'), false);
   assert.ok(ev.some((e) => e.type === 'hint' && /Раскрой ладонь/.test(e.hint)), JSON.stringify(ev));
 });
 
-test('короткий замах — подсказка «замах шире»', () => {
+test('низкий замах — подсказка «выше»', () => {
   const ev = swing(new ChopDetector(), { y0: 0.4, y1: 0.5, ms: 60 });
   assert.equal(ev.some((e) => e.type === 'chop'), false);
-  assert.ok(ev.some((e) => e.type === 'hint' && /Замах шире/.test(e.hint)), JSON.stringify(ev));
+  assert.ok(ev.some((e) => e.type === 'hint' && /Выше!/.test(e.hint)), JSON.stringify(ev));
 });
 
 test('в сюжете два сундука: клинок ветра и удар дракона', () => {

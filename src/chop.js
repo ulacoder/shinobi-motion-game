@@ -1,11 +1,11 @@
-// Удар ребром ладони («рубящий удар»): своя логика по скорости руки.
+// «Подними ладонь и опусти»: своя логика по скорости руки.
 // Рука должна быть раскрытой ладонью (пальцы прямые и вместе) и резко пойти сверху вниз.
 // Скорость считаем в «высотах кадра в секунду» по центру ладони между кадрами распознавания.
 // Каждый неудачный удар даёт конкретную подсказку: медленно, мало замаха, вбок, кулак.
 
 import { clamp01, dist } from './geometry.js';
 
-/** Раскрытая ладонь «ребром»: четыре пальца прямые и сомкнуты. */
+/** Раскрытая ровная ладонь: четыре пальца прямые и рядом. */
 export function bladeScore(hand) {
   const e = hand.ext;
   const straight = Math.min(e.index, e.middle, e.ring, Math.max(e.pinky, e.ring * 0.9));
@@ -73,7 +73,7 @@ export class ChopDetector {
         s.x = c.x;
         if (vy < 0.1) events.push(...this.finish(now));
       } else if (Math.abs(vx) > 2 && Math.abs(vy) < 0.5) {
-        events.push(...this.hint(now, 'Бей сверху вниз, а не вбок: подними ладонь и резко опусти'));
+        events.push(...this.hint(now, 'Сверху вниз, а не вбок: подними ладонь и опусти её'));
       }
     }
     this.prev = { x: c.x, y: c.y, t: stamp };
@@ -97,13 +97,13 @@ export class ChopDetector {
     if (s.blade < 0.55) {
       const b = s.bladeInfo;
       const hint = b.straight < 0.5
-        ? 'Раскрой ладонь: пальцы прямые, бей ребром ладони, а не кулаком'
-        : 'Сомкни пальцы вместе — ладонь как лезвие';
+        ? 'Раскрой ладонь: не кулак, а открытая ладонь — подними и опусти'
+        : 'Держи ладонь ровно: пальцы прямые и рядом';
       return this.hint(now, hint);
     }
-    if (sideways > drop * 1.4) return this.hint(now, 'Бей сверху вниз, а не вбок: подними ладонь и резко опусти');
-    if (s.peak < this.minSpeed) return this.hint(now, 'Резче! Бей быстро, как топором — медленный удар не расколет');
-    if (drop < this.minDrop) return this.hint(now, 'Замах шире: подними ладонь выше головы и опусти до груди');
+    if (sideways > drop * 1.4) return this.hint(now, 'Сверху вниз, а не вбок: подними ладонь и опусти её');
+    if (s.peak < this.minSpeed) return this.hint(now, 'Быстрее! Подними ладонь и быстро опусти вниз');
+    if (drop < this.minDrop) return this.hint(now, 'Выше! Подними ладонь над головой и опусти до груди');
     this.lastChopAt = now;
     const power = 0.6 + 0.4 * clamp01((s.peak - this.minSpeed) / 2.2);
     return [{ type: 'chop', power, speed: s.peak, drop }];
