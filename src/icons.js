@@ -80,6 +80,18 @@ export function techIcon(id, size = 34) {
       `<path d="M20 8c4 5 9 9 9 15a9 9 0 0 1-18 0c0-6 5-10 9-15z" fill="#bfefff" stroke="${INK}" stroke-width="1.8"/><path d="M15 23a5 5 0 0 0 4 5" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/>`,
     );
   }
+  if (id === 'wind') {
+    return wrap(
+      '#3f9a6e',
+      `<path d="M9 26c6-1 13-7 16-17" fill="none" stroke="#eafff4" stroke-width="3.2" stroke-linecap="round"/><path d="M14 31c7-2 13-8 17-16" fill="none" stroke="#eafff4" stroke-width="3.2" stroke-linecap="round"/><path d="M9 26c6-1 13-7 16-17M14 31c7-2 13-8 17-16" fill="none" stroke="${INK}" stroke-width="1" stroke-linecap="round" opacity="0.5"/>`,
+    );
+  }
+  if (id === 'dragon') {
+    return wrap(
+      '#b8322a',
+      `<path d="M10 28c3-6 8-4 10-9s-2-8 3-11c3-2 7 0 8 3-2-1-4-1-5 1 3 1 4 4 2 6-3 3-6 1-8 5s1 8-4 10c-3 1-5 0-6-5z" fill="#ffd166" stroke="${INK}" stroke-width="1.6" stroke-linejoin="round"/><circle cx="26" cy="11" r="1.2" fill="${INK}"/>`,
+    );
+  }
   // сфера
   return wrap(
     '#58d0ff',

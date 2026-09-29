@@ -412,6 +412,35 @@ const synth = {
     tone({ freq: 55, type: 'sine', dur: 0.18, gain: 0.55, slide: -15 });
     tone({ freq: 50, type: 'sine', dur: 0.2, gain: 0.4, slide: -15, delay: 0.22 });
   },
+  // удар по бамбуку: свист ладони + сухой треск дерева
+  chop: (power = 1) => {
+    whoosh(0, 0.18, 0.35, false);
+    noise({ dur: 0.09, gain: 0.9 * power, from: 3200, to: 900, type: 'bandpass', q: 3, delay: 0.08, attack: 0.001 });
+    noise({ dur: 0.25, gain: 0.6, from: 700, to: 150, type: 'lowpass', delay: 0.08, attack: 0.002 });
+    tone({ freq: 190, type: 'triangle', dur: 0.18, gain: 0.3, slide: -80, delay: 0.08 });
+    crackle(0.25, 40, 0.35);
+  },
+  chestBreak: () => {
+    noise({ dur: 0.5, gain: 1, from: 2500, to: 200, type: 'lowpass', attack: 0.001 });
+    crackle(0.6, 60, 0.4);
+    taiko(0, 1.3);
+    [659, 784, 988, 1319, 1568].forEach((f, i) => tone({ freq: f, type: 'triangle', dur: 0.6, gain: 0.16, delay: 0.25 + i * 0.08 }));
+    noise({ dur: 1.4, gain: 0.25, from: 3000, to: 9000, type: 'bandpass', q: 2, delay: 0.25, attack: 0.3 });
+  },
+  wind: () => {
+    whoosh(0, 0.3, 0.5, true);
+    whoosh(0.16, 0.3, 0.5, true);
+    noise({ dur: 0.15, gain: 0.7, from: 6000, to: 2000, type: 'highpass', delay: 0.42, attack: 0.002 });
+    noise({ dur: 0.15, gain: 0.6, from: 6000, to: 2000, type: 'highpass', delay: 0.58, attack: 0.002 });
+  },
+  dragon: () => {
+    tone({ freq: 90, type: 'sawtooth', dur: 0.9, gain: 0.25, slide: -40, attack: 0.3 });
+    noise({ dur: 0.9, gain: 0.6, from: 300, to: 3000, type: 'bandpass', q: 1.5, attack: 0.7 });
+    noise({ dur: 1.6, gain: 1.1, from: 1800, to: 60, type: 'lowpass', color: 'brown', delay: 0.85, attack: 0.003 });
+    tone({ freq: 48, type: 'sine', dur: 1.2, gain: 0.8, slide: -20, delay: 0.85 });
+    rumble(1, 2.4, 0.8);
+    crackle(1, 40, 0.3);
+  },
   success: () => [784, 988, 1175, 1568].forEach((f, i) => tone({ freq: f, type: 'triangle', dur: 0.35, gain: 0.14, delay: i * 0.07 })),
   draw: () => whoosh(0, 0.5, 0.2),
   hold: (p = 0) => tone({ freq: 440 * Math.pow(2, p), type: 'sine', dur: 0.08, gain: 0.06 }),

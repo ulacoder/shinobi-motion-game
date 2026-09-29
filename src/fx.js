@@ -168,6 +168,178 @@ export class Arena {
     });
   }
 
+  /** Клинок ветра: два серпа крест-накрест. */
+  wind(power) {
+    const to = this.enemyPos;
+    const from = this.playerPos;
+    for (let k = 0; k < 2; k++) {
+      this.particles.push({ kind: 'slash', x: from.x, y: from.y - 60, tx: to.x, ty: to.y, t: -k * 0.16, dur: 0.42, dir: k ? -1 : 1, size: (120 + power * 60) * to.s * 2 });
+    }
+    this.speedLines = 0.7;
+    this.later(0.42, () => {
+      this.impact(to, '180,255,210', power);
+      this.rings.push({ x: to.x, y: to.y, r: 10, max: 200 * to.s * 2, life: 0.4, color: '200,255,225' });
+    });
+    this.later(0.58, () => {
+      this.impact(to, '180,255,210', power * 0.8);
+      this.sfx('ズバッ!', to.x + 130, to.y - 70, { color: '#d8ffe8', size: 76 });
+    });
+  }
+
+  /** Удар дракона: с неба спускается светящаяся змея-дракон и врезается во врага. */
+  dragon(power) {
+    const to = this.enemyPos;
+    this.flash = 0.25;
+    this.flashColor = '60,10,10';
+    this.particles.push({ kind: 'dragon', x: to.x, y: -80, tx: to.x, ty: to.y, t: 0, dur: 0.85, size: (40 + power * 20) * to.s * 2 });
+    this.speedLines = 1;
+    this.later(0.85, () => {
+      this.impactFrame = 0.25;
+      this.impact(to, '255,190,90', 1.5);
+      this.flash = 1;
+      this.flashColor = '255,210,140';
+      this.shake = 26;
+      for (let i = 0; i < 3; i++) this.rings.push({ x: to.x, y: to.y + i * 10, r: 20, max: (220 + i * 120) * to.s * 2, life: 0.5 + i * 0.15, color: '255,200,120' });
+      this.sfx('ドォォン!', to.x, to.y - 150, { size: 100, color: '#ffe0a0' });
+    });
+  }
+
+  // ---------- бамбуковый сундук ----------
+
+  showChest() {
+    this.chest = { hits: 0, need: 3, shake: 0, broken: 0, glow: 0, t: 0 };
+  }
+
+  hideChest() {
+    this.chest = null;
+  }
+
+  get chestPos() {
+    const narrow = this.w < 820 || this.w < this.h;
+    return { x: this.w * 0.5, y: this.h * (narrow ? 0.4 : 0.46), s: Math.min(this.w, this.h) / (narrow ? 480 : 700) };
+  }
+
+  chestHit(power) {
+    const c = this.chest;
+    if (!c) return;
+    c.hits += 1;
+    c.shake = 1;
+    const p = this.chestPos;
+    this.shake = Math.max(this.shake, 8 + power * 8);
+    this.impactFrame = 0.08;
+    for (let i = 0; i < 18; i++) {
+      this.particles.push({ kind: 'splinter', x: p.x + rand(-60, 60) * p.s, y: p.y - 40 * p.s, vx: rand(-260, 260), vy: rand(-420, -120), t: 0, dur: rand(0.6, 1), size: rand(6, 14) * p.s, rot: rand(0, TAU) });
+    }
+    this.sfx(['バキッ!', 'メキッ!', 'ドカッ!'][Math.min(2, c.hits - 1)], p.x + rand(-120, 120), p.y - 140 * p.s, { color: '#ffe6a8', size: 70 });
+  }
+
+  chestBreak() {
+    const c = this.chest;
+    if (!c) return;
+    c.broken = 0.001;
+    const p = this.chestPos;
+    this.flash = 1;
+    this.flashColor = '255,236,170';
+    this.speedLines = 1;
+    for (let i = 0; i < 40; i++) {
+      this.particles.push({ kind: 'splinter', x: p.x + rand(-80, 80) * p.s, y: p.y + rand(-60, 40) * p.s, vx: rand(-520, 520), vy: rand(-700, -200), t: 0, dur: rand(0.8, 1.4), size: rand(10, 26) * p.s, rot: rand(0, TAU) });
+    }
+    this.rings.push({ x: p.x, y: p.y, r: 20, max: 420 * p.s, life: 0.7, color: '255,230,150' });
+  }
+
+  drawChest(dt) {
+    const c = this.chest;
+    if (!c) return;
+    const { ctx } = this;
+    const p = this.chestPos;
+    c.t += dt;
+    c.shake *= Math.pow(0.02, dt);
+    if (c.broken) c.broken = Math.min(1, c.broken + dt * 1.2);
+    ctx.save();
+    ctx.translate(p.x + (c.shake > 0.05 ? rand(-10, 10) * c.shake : 0), p.y + Math.sin(c.t * 2) * 3);
+    ctx.scale(p.s, p.s);
+    // свечение изнутри: сильнее с каждым ударом
+    const glow = (c.hits / c.need) * 0.8 + (c.broken ? 1 : 0.15 + 0.1 * Math.sin(c.t * 4));
+    const g = ctx.createRadialGradient(0, 0, 10, 0, 0, 260);
+    g.addColorStop(0, `rgba(255,220,120,${0.5 * glow})`);
+    g.addColorStop(1, 'rgba(255,220,120,0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(0, 0, 260, 0, TAU);
+    ctx.fill();
+    if (!c.broken) {
+      // корпус из бамбуковых стволов
+      const W = 260;
+      const H = 170;
+      for (let i = 0; i < 7; i++) {
+        const x = -W / 2 + (i * W) / 7;
+        const w = W / 7 - 4;
+        const col = i % 2 ? '#7fae4c' : '#8fbf58';
+        ctx.fillStyle = col;
+        ctx.strokeStyle = '#1a1320';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.roundRect(x + 2, -H / 2 + 20, w, H - 20, 10);
+        ctx.fill();
+        ctx.stroke();
+        // узлы бамбука
+        ctx.strokeStyle = '#4f7a2c';
+        ctx.lineWidth = 4;
+        for (const yy of [-10, 40]) {
+          ctx.beginPath();
+          ctx.moveTo(x + 4, yy);
+          ctx.lineTo(x + w, yy);
+          ctx.stroke();
+        }
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillRect(x + 7, -H / 2 + 28, 4, H - 40);
+      }
+      // крышка
+      ctx.fillStyle = '#6a8f3a';
+      ctx.strokeStyle = '#1a1320';
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.roundRect(-W / 2 - 14, -H / 2 - 6, W + 28, 40, 12);
+      ctx.fill();
+      ctx.stroke();
+      // верёвка и печать
+      ctx.strokeStyle = '#d9b36a';
+      ctx.lineWidth = 8;
+      ctx.beginPath();
+      ctx.moveTo(-W / 2 - 10, 30);
+      ctx.lineTo(W / 2 + 10, 30);
+      ctx.moveTo(0, -H / 2 - 6);
+      ctx.lineTo(0, H / 2);
+      ctx.stroke();
+      ctx.fillStyle = '#cc3325';
+      ctx.strokeStyle = '#1a1320';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.roundRect(-26, 4, 52, 52, 8);
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = '#efe6cf';
+      ctx.font = "34px 'Shippori Mincho B1', serif";
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('封', 0, 32);
+      // трещины — больше с каждым ударом
+      ctx.strokeStyle = '#1a1320';
+      ctx.lineWidth = 3;
+      const cracks = [
+        [[-60, -40], [-40, 0], [-55, 30], [-35, 70]],
+        [[70, -50], [50, -10], [72, 20], [55, 70]],
+        [[-10, -60], [10, -20], [-8, 10], [15, 70]],
+      ];
+      for (let k = 0; k < Math.min(c.hits, cracks.length); k++) {
+        ctx.beginPath();
+        cracks[k].forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)));
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+  }
+
   sphere(power) {
     const from = { x: this.w * 0.5, y: this.h * 0.8 };
     const to = this.enemyPos;
@@ -278,6 +450,7 @@ export class Arena {
     }
     this.drawBackground(dt);
     if (this.enemy) this.drawEnemy(dt);
+    if (this.chest) this.drawChest(dt);
     this.drawShield();
     this.drawParticles(dt);
     this.drawBolts(dt);
@@ -648,6 +821,73 @@ export class Arena {
         ctx.arc(x, y, p.size * (0.6 + k * 0.6), 0, TAU);
         ctx.fill();
         ctx.stroke();
+      } else if (p.kind === 'slash') {
+        // серп ветра: дуга летит к врагу и растёт
+        const e = k * k;
+        const x = p.x + (p.tx - p.x) * e;
+        const y = p.y + (p.ty - p.y) * e;
+        const r = p.size * (0.5 + k * 0.7);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(p.dir * 0.7);
+        ctx.globalCompositeOperation = 'lighter';
+        for (const [wd, a] of [[16, 0.25], [7, 0.9]]) {
+          ctx.strokeStyle = `rgba(200,255,225,${a * (1 - k * 0.5)})`;
+          ctx.lineWidth = wd;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.arc(0, 0, r, -1.2, 1.2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      } else if (p.kind === 'dragon') {
+        // дракон из света: змеистая лента с головой спускается сверху
+        const head = Math.min(1, k * 1.15);
+        const segs = 26;
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineCap = 'round';
+        let hx = 0;
+        let hy = 0;
+        for (let i = 0; i < segs; i++) {
+          const q = head - i * 0.035;
+          if (q < 0) break;
+          const yy = p.y + (p.ty - p.y) * q;
+          const xx = p.tx + Math.sin(q * 9 + this.time * 3) * 120 * (1 - q * 0.6) * (p.size / 60);
+          if (i === 0) {
+            hx = xx;
+            hy = yy;
+          }
+          const w = p.size * (1 - i / segs) + 4;
+          ctx.fillStyle = `rgba(255,${170 + i * 3},80,${0.55 * (1 - i / segs)})`;
+          ctx.beginPath();
+          ctx.arc(xx, yy, w, 0, TAU);
+          ctx.fill();
+        }
+        // голова
+        ctx.fillStyle = 'rgba(255,240,190,0.95)';
+        ctx.beginPath();
+        ctx.ellipse(hx, hy, p.size * 1.2, p.size * 0.8, 0, 0, TAU);
+        ctx.fill();
+        ctx.fillStyle = 'rgba(200,40,30,0.9)';
+        ctx.beginPath();
+        ctx.arc(hx - p.size * 0.4, hy - p.size * 0.2, p.size * 0.15, 0, TAU);
+        ctx.arc(hx + p.size * 0.4, hy - p.size * 0.2, p.size * 0.15, 0, TAU);
+        ctx.fill();
+        ctx.restore();
+      } else if (p.kind === 'splinter') {
+        const x = p.x + p.vx * p.t;
+        const y = p.y + p.vy * p.t + 900 * p.t * p.t;
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(p.rot + p.t * 8);
+        ctx.globalAlpha = 1 - k;
+        ctx.fillStyle = '#8fbf58';
+        ctx.strokeStyle = '#1a1320';
+        ctx.lineWidth = 2;
+        ctx.fillRect(-p.size / 2, -p.size / 6, p.size, p.size / 3);
+        ctx.strokeRect(-p.size / 2, -p.size / 6, p.size, p.size / 3);
+        ctx.restore();
       } else if (p.kind === 'cloud') {
         // клубы грозовой тучи: быстро набухают и медленно тают
         const grow = Math.min(1, k * 4);

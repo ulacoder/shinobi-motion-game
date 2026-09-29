@@ -2489,3 +2489,130 @@ button {
     font-size: 0.85rem;
   }
 }
+
+/* ---------- бамбуковый сундук ---------- */
+
+#app[data-screen='chest'] #screen-chest {
+  display: block;
+}
+
+#app[data-screen='chest'] .cam {
+  left: var(--gutter);
+  bottom: var(--gutter);
+  width: min(30vw, 420px, calc(34vh * var(--cam-ar)));
+}
+
+.chest-hud {
+  position: absolute;
+  left: 50%;
+  top: calc(var(--gutter) + 8px);
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: min(420px, calc(100% - 2 * var(--gutter)));
+  text-align: center;
+}
+
+.chest-title {
+  font-family: var(--font-anime);
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  color: var(--gold);
+  text-shadow: 3px 3px 0 var(--seal-dark), 6px 6px 0 rgba(0, 0, 0, 0.4);
+}
+
+.chest-how {
+  font-weight: 800;
+  color: var(--text);
+  text-shadow: 1px 1px 0 #000;
+}
+
+.chest-bar {
+  width: 100%;
+}
+
+.chest-count {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-dim);
+}
+
+.chest-reward {
+  position: absolute;
+  right: var(--gutter);
+  bottom: var(--gutter);
+  width: min(420px, calc(100% - 2 * var(--gutter)));
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  animation: panel-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+
+.chest-reward h2 {
+  margin: 0;
+}
+
+.chest-reward-how {
+  margin: 0.3rem 0;
+  font-weight: 800;
+  color: var(--seal-dark);
+}
+
+.chest-reward-desc {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.tech.ultimate.new .tech-glyph {
+  filter: drop-shadow(0 0 6px rgba(255, 190, 90, 0.8));
+}
+
+.tech-list.many .tech {
+  padding: 5px 8px;
+}
+
+@media (max-width: 820px), (max-aspect-ratio: 1/1) {
+  #app[data-screen='chest'] .cam {
+    width: 44vw;
+  }
+
+  .chest-reward {
+    left: var(--gutter);
+    right: var(--gutter);
+    width: auto;
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .chest-how {
+    font-size: 0.8rem;
+  }
+
+  #battle-techs.many {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  #battle-techs.many .tech-name {
+    font-size: 0.56rem;
+  }
+
+  #battle-techs.many .tech-seq .seal-mini {
+    width: 20px;
+    height: 17px;
+  }
+}
+
+#app[data-screen='chest'] .sensei {
+  top: calc(var(--gutter) + 158px);
+}
+
+.chest-reward[hidden] {
+  display: none;
+}
+
+@media (max-width: 820px), (max-aspect-ratio: 1/1) {
+  #app[data-screen='chest'] .sensei {
+    top: calc(var(--gutter) + 104px);
+  }
+}

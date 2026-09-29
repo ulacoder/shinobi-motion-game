@@ -4,9 +4,10 @@ import { buildHands, FINGER_NAMES, SIDE_NAMES } from './geometry.js';
 import { SEALS, SEAL_ORDER, NEAR_ACCURACY, classify } from './seals.js';
 import { SealDetector } from './detector.js';
 import { CircleTracker, isPointing } from './air.js';
+import { ChopDetector, bladeScore } from './chop.js';
 import { BrightnessMeter, frameIssue } from './quality.js';
 import {
-  Battle, TECHNIQUES, ULTIMATE, ENEMIES, STORY, STAGE_NAMES, PLAYER_MAX_HP, emptyStats, scoreRun, topMistakes,
+  Battle, TECHNIQUES, EXTRA_TECHNIQUES, ULTIMATE, DRAGON, REWARDS, ENEMIES, STORY, STAGE_NAMES, PLAYER_MAX_HP, emptyStats, scoreRun, topMistakes,
 } from './battle.js';
 import { startCamera, createHandTracker, CameraError, prefetchRecognition, stopProgress } from './tracker.js';
 import { Arena } from './fx.js';
@@ -118,6 +119,8 @@ function startStory({ quick = false } = {}) {
     name: randomNinjaName(),
     combo: { count: 0, lastAt: -Infinity, lastTech: null },
     bestForms: {},
+    // в быстром бою сразу открыты все приёмы, в сюжете — из сундуков
+    unlocked: quick ? ['wind', 'dragon'] : [],
   };
   playStep();
 }
@@ -125,7 +128,7 @@ function startStory({ quick = false } = {}) {
 function playStep() {
   const step = STORY[run.step];
   if (!step) return finishRun(true, 'Кагэро повержен. Деревня спасена');
-  go(step.type === 'scene' ? 'scene' : 'battle', step);
+  go(step.type === 'scene' ? 'scene' : step.type === 'chest' ? 'chest' : 'battle', step);
 }
 
 function nextStep() {
@@ -179,11 +182,13 @@ const menu = {
 
 // ---------- экран: додзё ----------
 
-const LESSONS = [...SEAL_ORDER.map((id) => ({ type: 'seal', id })), { type: 'circle' }];
+const LESSONS = [...SEAL_ORDER.map((id) => ({ type: 'seal', id })), { type: 'circle' }, { type: 'chop' }];
+const lessonGlyph = (l) => (l.type === 'seal' ? SEALS[l.id].kanji : l.type === 'chop' ? '斬' : ULTIMATE.glyph);
 
 const dojo = {
   detector: new SealDetector({ holdMs: 600, hintDelayMs: 500 }),
   circle: new CircleTracker(),
+  chop: new ChopDetector(),
 
   enter() {
     this.idx = 0;
@@ -205,9 +210,9 @@ const dojo = {
     const ol = $('dojo-steps');
     ol.replaceChildren();
     LESSONS.forEach((l, i) => {
-      const glyph = l.type === 'seal' ? SEALS[l.id].kanji : ULTIMATE.glyph;
+      const glyph = lessonGlyph(l);
       const li = el('li', i < this.idx || this.finished ? 'done' : i === this.idx ? 'current' : '', glyph);
-      li.title = l.type === 'seal' ? SEALS[l.id].name : 'Круг';
+      li.title = l.type === 'seal' ? SEALS[l.id].name : l.type === 'chop' ? 'Удар ребром ладони' : 'Круг';
       ol.append(li);
     });
   },
@@ -216,6 +221,7 @@ const dojo = {
     const lesson = LESSONS[this.idx];
     this.detector.reset();
     this.circle.reset();
+    this.chop.reset();
     const best = getSealBest();
     if (lesson.type === 'seal') {
       const s = SEALS[lesson.id];
@@ -225,6 +231,14 @@ const dojo = {
       $('lesson-name').textContent = s.name;
       $('lesson-how').textContent = s.how;
       $('lesson-best').textContent = best[lesson.id] ? `· лучший результат ${pct(best[lesson.id])}` : '';
+    } else if (lesson.type === 'chop') {
+      $('lesson-hanko').textContent = '斬';
+      $('lesson-icon').innerHTML = techIcon('dragon', 80);
+      $('lesson-kicker').textContent = 'Удар для сундуков и ультимейта';
+      $('lesson-name').textContent = 'Удар ребром ладони';
+      $('lesson-how').textContent =
+        'Раскрой ладонь, пальцы вместе, как лезвие. Подними руку выше головы и резко опусти вниз, как топор. Так открываются бамбуковые сундуки и работает «Удар дракона».';
+      $('lesson-best').textContent = best.chop ? `· лучший результат ${pct(best.chop)}` : '';
     } else {
       $('lesson-hanko').textContent = ULTIMATE.glyph;
       $('lesson-icon').innerHTML = techIcon('sphere', 80);
@@ -331,6 +345,37 @@ const dojo = {
       return;
     }
 
+    if (lesson.type === 'chop') {
+      this.overlayBad = null;
+      const hand = hands[0];
+      const blade = hand ? bladeScore(hand) : null;
+      this.overlayTone = blade && blade.score > 0.6 ? 'near' : 'idle';
+      if (now - this.lastRender > 150) {
+        const checks = $('lesson-checks');
+        checks.replaceChildren();
+        const row = el('div', 'check-row');
+        const ok1 = blade && blade.straight > 0.55;
+        const ok2 = blade && blade.together > 0.5;
+        row.append(el('span', `chip ${ok1 ? 'ok' : 'bad'}`, `${ok1 ? '✓' : '✗'} пальцы прямые`));
+        row.append(el('span', `chip ${ok2 ? 'ok' : 'bad'}`, `${ok2 ? '✓' : '✗'} пальцы вместе`));
+        row.append(el('span', 'chip', '· резко сверху вниз'));
+        checks.append(row);
+        this.lastRender = now;
+      }
+      if (!hands.length && !issue) sensei.show('Подними руку с раскрытой ладонью выше головы', 'info', now);
+      for (const e of this.chop.update(hands, now, handsStamp)) {
+        if (e.type === 'chop') {
+          sfx.chop(e.power);
+          arena.shake = 10;
+          this.succeed('斬', e.power, 'chop', now);
+        } else {
+          sfx.hint();
+          sensei.show(e.hint, 'warn', now, { lock: 1600, ttl: 3000 });
+        }
+      }
+      return;
+    }
+
     // Урок: круг в воздухе
     this.overlayBad = null;
     const pointer = hands.find(isPointing);
@@ -379,7 +424,7 @@ const dojo = {
       $('lesson-how').textContent = 'Печати складываются в техники. Держи каждую печать, пока она не засчитается.';
       $('lesson-checks').replaceChildren();
       $('lesson-done').hidden = false;
-      renderTechList($('lesson-techs'), { showDesc: true });
+      renderTechList($('lesson-techs'), { showDesc: true, techs: [...Object.values(TECHNIQUES), EXTRA_TECHNIQUES.wind], dragon: true });
       this.choice.reset();
       sensei.show('Раскрой обе ладони и держи секунду — начнём поход', 'good', performance.now());
       return;
@@ -570,6 +615,13 @@ function cutin(tech, forms = []) {
 const fight = {
   detector: new SealDetector(),
   circle: new CircleTracker(),
+  chop: new ChopDetector(),
+
+  /** Какие техники показать в списке: базовые + открытые в сундуках. */
+  techOpts(extra) {
+    const techs = [...Object.values(TECHNIQUES), ...run.unlocked.filter((id) => EXTRA_TECHNIQUES[id]).map((id) => EXTRA_TECHNIQUES[id])];
+    return { techs, dragon: run.unlocked.includes('dragon'), ...extra };
+  },
 
   enter(step) {
     this.step = step;
@@ -590,11 +642,12 @@ const fight = {
     music.setPlace(step.place);
     music.play(this.enemy.boss ? 'boss' : 'battle');
     music.setIntensity(1);
+    this.chop.reset();
     this.heartAt = 0;
     this.wasDrawing = false;
     setTimeout(() => sfx.enemy(), 250);
     renderChain($('chain'), []);
-    renderTechList($('battle-techs'), { ultimateReady: run.chakra >= 100 });
+    renderTechList($('battle-techs'), this.techOpts({ ultimateReady: run.chakra >= 100 }));
 
     // HUD: портреты, имена, этап
     drawPortrait($('portrait-hero'), 'ulagat', { mood: 'angry', bg: '#1d4a66', lines: false });
@@ -615,7 +668,7 @@ const fight = {
       k++;
     }
     this.hud();
-    sensei.show(`${this.enemy.name} — ${this.enemy.title}. Техники на свитке справа, серии дают комбо`, 'info', performance.now(), { ttl: 3000 });
+    sensei.show(`${this.enemy.name} — ${this.enemy.title}. Техники — на свитке, серии дают комбо`, 'info', performance.now(), { ttl: 3000 });
     $('countdown').hidden = false;
   },
 
@@ -630,7 +683,7 @@ const fight = {
         case 'chain':
           this.chainForms = e.chain.length ? this.chainForms.slice(-e.chain.length) : [];
           renderChain($('chain'), e.chain, this.chainForms);
-          renderTechList($('battle-techs'), { chain: e.chain, ultimateReady: b.ultimateReady });
+          renderTechList($('battle-techs'), this.techOpts({ chain: e.chain, ultimateReady: b.ultimateReady }));
           break;
         case 'cast': {
           const id = e.tech.id;
@@ -641,7 +694,10 @@ const fight = {
           if (id === 'lightning') (arena.lightning(e.power), sfx.lightning());
           if (id === 'shield') (arena.shieldUp(), sfx.shield());
           if (id === 'sphere') (arena.sphere(e.power), sfx.sphere());
-          if (e.damage) setTimeout(() => (arena.damageText(e.damage), sfx.hit()), id === 'sphere' ? 900 : id === 'fire' ? 550 : 420);
+          if (id === 'wind') (arena.wind(e.power), sfx.wind());
+          if (id === 'dragon') (arena.dragon(e.power), sfx.dragon());
+          const hitDelay = { sphere: 900, fire: 550, wind: 500, dragon: 850 }[id] ?? 420;
+          if (e.damage) setTimeout(() => (arena.damageText(e.damage), sfx.hit()), hitDelay);
           const weakHint = this.weakHint();
           if (e.power < 0.9 && weakHint) {
             sensei.show(`${e.tech.name}: сила ${pct(e.power)}. ${weakHint}`, 'info', now, { lock: 1500, ttl: 3200 });
@@ -649,7 +705,7 @@ const fight = {
             sensei.show(`${e.tech.name}! Сила ${pct(e.power)}`, 'good', now, { lock: 900 });
           }
           renderChain($('chain'), []);
-          renderTechList($('battle-techs'), { chain: [], ultimateReady: b.ultimateReady });
+          renderTechList($('battle-techs'), this.techOpts({ chain: [], ultimateReady: b.ultimateReady }));
           break;
         }
         case 'stun':
@@ -687,8 +743,15 @@ const fight = {
           break;
         case 'ultimate-ready':
           sfx.ultimate();
-          renderTechList($('battle-techs'), { chain: b.chain, ultimateReady: true });
-          sensei.show('Чакра полная! Оставь одну руку и нарисуй указательным пальцем круг', 'good', now, { lock: 2000, ttl: 4000 });
+          renderTechList($('battle-techs'), this.techOpts({ chain: b.chain, ultimateReady: true }));
+          sensei.show(
+            run.unlocked.includes('dragon')
+              ? 'Чакра полная! Руби ладонью сверху вниз — Удар дракона. Или нарисуй пальцем круг'
+              : 'Чакра полная! Оставь одну руку и нарисуй указательным пальцем круг',
+            'good',
+            now,
+            { lock: 2000, ttl: 4000 },
+          );
           break;
         case 'enemy-down':
           setTimeout(() => (arena.smoke(), sfx.win()), 500);
@@ -773,6 +836,7 @@ const fight = {
           stats: run.stats,
           mistakes: run.mistakes,
           combo: run.combo,
+          unlocked: run.unlocked,
         });
         setTimeout(() => ($('countdown').hidden = true), 400);
       }
@@ -795,6 +859,18 @@ const fight = {
     this.overlayBad = null;
 
     // Ультимейт: одна рука, указательный палец рисует круг
+    // Удар дракона: рубящий удар ладонью при полной чакре
+    if (b.ultimateReady && run.unlocked.includes('dragon') && !this.circle.drawing) {
+      for (const e of this.chop.update(hands, now, handsStamp)) {
+        if (e.type === 'chop') {
+          sfx.chop(e.power);
+          this.handle(b.onChop(e.power, now), now);
+        } else if (!issue) {
+          b.noteMistake(e.hint, now);
+          sensei.show(e.hint, 'warn', now, { lock: 1400, ttl: 2600 });
+        }
+      }
+    }
     const drawingMode = b.ultimateReady && hands.length === 1 && (isPointing(hands[0]) || this.circle.drawing);
     if (drawingMode || (this.circle.drawing && b.ultimateReady)) {
       this.overlayTone = 'near';
@@ -838,6 +914,10 @@ const fight = {
     }
 
     this.handle(b.tick(now), now);
+
+    // Музыка разгоняется по ходу боя
+    const hpLeft = b.enemyHp / this.enemy.hp;
+    music.setIntensity(hpLeft < 0.25 ? 3 : hpLeft < 0.55 || b.phase2 ? 2 : 1);
 
     if (b.phase2 && !this.warnedPhase2) {
       this.warnedPhase2 = true;
@@ -936,7 +1016,97 @@ const results = {
 
 // ---------- переключение экранов ----------
 
-const controllers = { menu, dojo, scene, battle: fight, results };
+// ---------- экран: бамбуковый сундук ----------
+
+const chest = {
+  detector: new ChopDetector(),
+
+  enter(step) {
+    this.step = step;
+    this.reward = REWARDS[step.reward];
+    this.hits = 0;
+    this.need = 3;
+    this.doneAt = 0;
+    this.detector.reset();
+    arena.setPlace(step.place);
+    arena.showEnemy(null);
+    arena.showChest();
+    music.setPlace(step.place);
+    music.play('chest');
+    music.setIntensity(1);
+    this.render();
+    sfx.title();
+    sensei.show('Бамбуковый сундук! Разбей его: раскрытая ладонь ребром, резко сверху вниз', 'info', performance.now(), { ttl: 4000, lock: 1500 });
+    this.onClick ??= () => this.hit(0.8, performance.now());
+    $('screen-chest').addEventListener('click', this.onClick);
+  },
+
+  exit() {
+    arena.hideChest();
+    $('screen-chest').removeEventListener('click', this.onClick);
+    $('chest-reward').hidden = true;
+  },
+
+  render() {
+    setText($('chest-count'), `Ударов: ${this.hits} из ${this.need}`);
+    setWidth($('chest-meter'), pct(this.hits / this.need));
+  },
+
+  hit(power, now) {
+    if (this.doneAt || this.hits >= this.need) return;
+    this.hits += 1;
+    sfx.chop(power);
+    arena.chestHit(power);
+    this.render();
+    if (this.hits >= this.need) this.open(now);
+    else sensei.show(this.hits === 1 ? 'Трещит! Ещё удар!' : 'Почти! Последний удар!', 'good', now, { lock: 700 });
+  },
+
+  open(now) {
+    arena.chestBreak();
+    sfx.chestBreak();
+    run.stats.chests = (run.stats.chests ?? 0) + 1;
+    if (!run.unlocked.includes(this.step.reward)) run.unlocked.push(this.step.reward);
+    const r = this.reward;
+    setTimeout(() => {
+      cutin(r.tech);
+      $('chest-reward-kanji').textContent = r.tech.glyph;
+      $('chest-reward-name').textContent = r.tech.name;
+      $('chest-reward-kind').textContent = r.kind === 'ultimate' ? 'Новый ультимейт' : 'Новый приём';
+      $('chest-reward-how').textContent = `Как: ${r.how}`;
+      $('chest-reward-desc').textContent = r.tech.desc;
+      $('chest-reward').hidden = false;
+      sfx.win();
+    }, 600);
+    sensei.show(`Сундук открыт! Новый приём: ${r.tech.name}`, 'good', now, { lock: 3000, ttl: 5000 });
+    this.doneAt = now + 5200;
+  },
+
+  update(now) {
+    this.overlayTone = 'idle';
+    if (this.doneAt) {
+      if (now >= this.doneAt) {
+        this.doneAt = 0;
+        nextStep();
+      }
+      return;
+    }
+    const issue = reportFrameIssue(now);
+    const hand = hands[0];
+    this.overlayTone = hand && bladeScore(hand).score > 0.6 ? 'near' : 'idle';
+    for (const e of this.detector.update(hands, now, handsStamp)) {
+      if (e.type === 'chop') this.hit(e.power, now);
+      else if (!issue) {
+        sfx.hint();
+        run.mistakes && run.mistakes.set(e.hint, (run.mistakes.get(e.hint) ?? 0) + 1);
+        sensei.show(e.hint, 'warn', now, { lock: 1500, ttl: 3000 });
+      }
+    }
+    if (!hands.length && !issue) sensei.show('Подними раскрытую ладонь выше головы и руби вниз', 'info', now);
+  },
+};
+
+const controllers = { menu, dojo, scene, battle: fight, results, chest };
 
 function go(screen, arg) {
   controller?.exit?.();
@@ -1008,6 +1178,9 @@ addEventListener('keydown', (e) => {
   if ((screen === 'menu' || screen === 'results') && /^[1-3]$/.test(e.key)) {
     const buttons = [...$(`screen-${screen}`).querySelectorAll('[data-choice]')];
     buttons[Number(e.key) - 1]?.click();
+  } else if (screen === 'chest' && (e.key === ' ' || e.key === 'Enter')) {
+    e.preventDefault();
+    chest.hit(0.8, performance.now());
   } else if (screen === 'scene' && (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight')) {
     e.preventDefault();
     scene.skip(performance.now());
@@ -1036,6 +1209,8 @@ function renderDebug() {
 // ---------- главный цикл ----------
 
 let fakeResult = null;
+let handsStamp = 0;
+let lastFake = null;
 let prev = performance.now();
 
 let frameAvg = 16;
@@ -1049,6 +1224,11 @@ function loop(now) {
 
   if (fakeResult) {
     hands = buildHands(fakeResult, aspect);
+    // как с настоящей камерой: новый «кадр распознавания» только когда подставили новый результат
+    if (fakeResult !== lastFake) {
+      lastFake = fakeResult;
+      handsStamp = now;
+    }
   } else if (tracker && video.readyState >= 2 && video.currentTime !== lastVideoTime && now - lastDetectAt >= detectGap) {
     lastVideoTime = video.currentTime;
     lastDetectAt = now;
@@ -1059,6 +1239,7 @@ function loop(now) {
       detectCost = detectCost * 0.9 + (performance.now() - t0) * 0.1;
       detectGap = detectCost > 22 ? 60 : detectCost > 14 ? 40 : 0;
       hands = buildHands(result, aspect);
+      handsStamp = now;
     } catch (err) {
       console.warn('Ошибка распознавания кадра', err);
     }

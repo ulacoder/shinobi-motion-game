@@ -2,7 +2,7 @@
 
 import { HAND_CONNECTIONS } from './tracker.js';
 import { SEALS, evaluateSeal } from './seals.js';
-import { TECHNIQUES, ULTIMATE } from './battle.js';
+import { TECHNIQUES, ULTIMATE, DRAGON } from './battle.js';
 import { sealIcon, techIcon } from './icons.js';
 import { sfx } from './audio.js';
 
@@ -256,9 +256,13 @@ const sealHanko = (id, cls = '') => {
   return s;
 };
 
-export function renderTechList(ul, { chain = [], ultimateReady = false, showUltimate = true, showDesc = false } = {}) {
+export function renderTechList(
+  ul,
+  { chain = [], ultimateReady = false, showUltimate = true, showDesc = false, techs = Object.values(TECHNIQUES), dragon = false } = {},
+) {
   ul.replaceChildren();
-  for (const t of Object.values(TECHNIQUES)) {
+  ul.classList.toggle('many', techs.length + (showUltimate ? 1 + (dragon ? 1 : 0) : 0) > 4);
+  for (const t of techs) {
     const li = el('li', 'tech');
     const matches = chain.length && chain.every((s, i) => t.seq[i] === s);
     if (matches) li.classList.add('hot');
@@ -288,6 +292,15 @@ export function renderTechList(ul, { chain = [], ultimateReady = false, showUlti
     li.append(el('span', 'tech-seq', ultimateReady ? 'Нарисуй круг пальцем одной руки' : 'Накопи чакру до 100%'));
     if (showDesc) li.append(el('span', 'tech-desc', ULTIMATE.desc));
     ul.append(li);
+    if (dragon) {
+      const d = el('li', `tech ultimate new${ultimateReady ? ' ready' : ''}`);
+      const g2 = el('span', 'tech-glyph');
+      g2.innerHTML = techIcon('dragon', 36);
+      d.append(g2, el('span', 'tech-name', DRAGON.name));
+      d.append(el('span', 'tech-seq', ultimateReady ? 'Руби ладонью сверху вниз!' : 'Накопи чакру до 100%'));
+      if (showDesc) d.append(el('span', 'tech-desc', DRAGON.desc));
+      ul.append(d);
+    }
   }
 }
 

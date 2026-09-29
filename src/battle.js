@@ -44,11 +44,42 @@ export const ULTIMATE = {
   desc: 'Сжатый вихрь чакры: закручиваешь его кругом пальца и врезаешь во врага. Самый сильный удар, нужна полная чакра.',
 };
 
+/** Приёмы, которые открываются в бамбуковых сундуках по ходу сюжета. */
+export const EXTRA_TECHNIQUES = {
+  wind: {
+    id: 'wind',
+    name: 'Клинок ветра',
+    glyph: '風',
+    seq: ['dragon', 'bird'],
+    damage: 24,
+    note: 'двойной разрез',
+    desc: 'Два серпа из сжатого ветра рассекают врага крест-накрест. Бьёт сильнее огненного шара.',
+  },
+};
+
+/** Второй ультимейт: удар ребром ладони сверху вниз при полной чакре. */
+export const DRAGON = {
+  id: 'dragon',
+  name: 'Удар дракона',
+  glyph: '龍',
+  damage: 44,
+  note: 'рубящий удар ладонью',
+  desc: 'Резко опусти раскрытую ладонь ребром сверху вниз — с неба обрушивается светящийся дракон. Самый мощный приём.',
+};
+
+/** Награды сундуков. */
+export const REWARDS = {
+  wind: { kind: 'technique', tech: EXTRA_TECHNIQUES.wind, how: 'Дракон → Птица' },
+  dragon: { kind: 'ultimate', tech: DRAGON, how: 'удар ребром ладони сверху вниз при полной чакре' },
+};
+
 /** Особые связки: одна техника сразу за другой даёт бонус. */
 export const COMBOS = [
   { from: 'lightning', to: 'fire', name: 'Грозовое пламя', bonus: 10 },
   { from: 'shield', to: 'lightning', name: 'Контрудар молнией', bonus: 8 },
   { from: 'fire', to: 'sphere', name: 'Огненный вихрь', bonus: 12 },
+  { from: 'wind', to: 'fire', name: 'Пламенный ураган', bonus: 10 },
+  { from: 'lightning', to: 'dragon', name: 'Небесный дракон', bonus: 16 },
 ];
 export const COMBO_WINDOW_MS = 7000;
 
@@ -153,6 +184,7 @@ export const STORY = [
     ],
   },
   { type: 'fight', stage: 1, enemy: 'scout2', place: 'forest' },
+  { type: 'chest', stage: 1, reward: 'wind', place: 'forest' },
   {
     type: 'scene',
     stage: 2,
@@ -178,6 +210,7 @@ export const STORY = [
     ],
   },
   { type: 'fight', stage: 2, enemy: 'ash2', place: 'bridge' },
+  { type: 'chest', stage: 2, reward: 'dragon', place: 'bridge' },
   {
     type: 'scene',
     stage: 3,
@@ -219,7 +252,7 @@ export function powerFromAccuracy(acc) {
 }
 
 export function emptyStats() {
-  return { seals: 0, techniques: 0, blocks: 0, hitsTaken: 0, stuns: 0, damage: 0, accSum: 0, accCount: 0, defeated: 0, maxCombo: 0, specials: 0 };
+  return { seals: 0, techniques: 0, blocks: 0, hitsTaken: 0, stuns: 0, damage: 0, accSum: 0, accCount: 0, defeated: 0, maxCombo: 0, specials: 0, chests: 0 };
 }
 
 /** Один бой против одного врага. Здоровье героя, чакра и статистика переносятся между боями. */
@@ -233,8 +266,12 @@ export class Battle {
     stats = emptyStats(),
     mistakes = new Map(),
     combo = { count: 0, lastAt: -Infinity, lastTech: null },
+    unlocked = [],
   } = {}) {
     this.combo = combo;
+    this.unlocked = new Set(unlocked);
+    this.techs = { ...TECHNIQUES };
+    for (const id of this.unlocked) if (EXTRA_TECHNIQUES[id]) this.techs[id] = EXTRA_TECHNIQUES[id];
     this.rng = rng;
     this.enemy = enemy;
     this.startedAt = now;
@@ -277,7 +314,7 @@ export class Battle {
   /** Какие печати игрок может сложить следующими. */
   expectedNext() {
     const out = [];
-    for (const t of Object.values(TECHNIQUES)) {
+    for (const t of Object.values(this.techs)) {
       if (this.chain.every((s, i) => t.seq[i] === s) && t.seq.length > this.chain.length) {
         out.push({ tech: t, seal: t.seq[this.chain.length] });
       }
@@ -294,7 +331,7 @@ export class Battle {
     this.chakra = Math.min(100, this.chakra + 6 * accuracy);
 
     const next = [...this.chain, sealId];
-    const matches = Object.values(TECHNIQUES).filter((t) => next.every((s, i) => t.seq[i] === s));
+    const matches = Object.values(this.techs).filter((t) => next.every((s, i) => t.seq[i] === s));
 
     if (matches.length) {
       this.chain = next;
@@ -308,15 +345,13 @@ export class Battle {
 
     // Печать не продолжает цепочку — конкретно объясняем, что ожидалось.
     const expected = this.expectedNext();
-    const starters = Object.values(TECHNIQUES).filter((t) => t.seq[0] === sealId);
+    const starters = Object.values(this.techs).filter((t) => t.seq[0] === sealId);
     let hint;
     if (this.chain.length && expected.length) {
       const e = expected[0];
       hint = `После печати «${sealName(this.chain.at(-1))}» для техники «${e.tech.name}» нужна «${sealName(e.seal)}», а не «${sealName(sealId)}»`;
     } else {
-      const names = Object.values(TECHNIQUES)
-        .map((t) => `«${sealName(t.seq[0])}»`)
-        .join(', ');
+      const names = [...new Set(Object.values(this.techs).map((t) => `«${sealName(t.seq[0])}»`))].join(', ');
       hint = `С печати «${sealName(sealId)}» техника не начинается. Первая печать: ${names}`;
     }
     this.noteMistake(hint, now);
@@ -406,6 +441,25 @@ export class Battle {
     return events;
   }
 
+  /** Удар дракона: рубящий удар ладонью при полной чакре (если приём открыт). */
+  onChop(power, now) {
+    if (this.over || !this.ultimateReady || !this.unlocked.has('dragon')) return [];
+    const p = Math.max(0.6, Math.min(1, power));
+    const combo = this.advanceCombo(DRAGON, now);
+    const dmg = Math.round(DRAGON.damage * p * combo.mult) + (combo.special?.bonus ?? 0);
+    this.enemyHp = Math.max(0, this.enemyHp - dmg);
+    this.stats.damage += dmg;
+    this.stats.techniques += 1;
+    this.chakra = 0;
+    const events = [{ type: 'cast', tech: DRAGON, power: p, accuracy: p, damage: dmg, ...combo }];
+    if (this.foe.state === 'charging') {
+      this.foe = { state: 'stunned', until: now + 2200, chargeStart: 0 };
+      events.push({ type: 'stun' });
+    }
+    events.push(...this.checkEnd(now));
+    return events;
+  }
+
   tick(now) {
     if (this.over) return [];
     const events = [];
@@ -472,6 +526,7 @@ export function scoreRun({ win, stats, playerHp, timeSec }) {
       stats.stuns * 100 +
       stats.maxCombo * 120 +
       stats.specials * 200 +
+      (stats.chests ?? 0) * 150 +
       avgAcc * 1000 +
       (win ? playerHp * 8 + Math.max(0, 300 - timeSec) * 6 : 0),
   );
