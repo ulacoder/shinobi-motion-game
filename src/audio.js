@@ -133,8 +133,9 @@ export async function loadAudioManifest() {
   } catch {
     /* нет манифеста — только синтез */
   }
-  // Заранее подгружаем звуковые эффекты: их мало, а задержка при ударе заметна.
+  // Заранее подгружаем звуки и всю озвучку (~1.5 МБ), чтобы реплика звучала ровно в момент появления текста.
   for (const name of manifest.sounds ?? []) loadBuffer(`./sounds/${name}`);
+  for (const name of manifest.voices ?? []) loadBuffer(`./voices/${name}`);
   return manifest;
 }
 
@@ -185,17 +186,51 @@ function trySoundFile(name) {
   return false;
 }
 
+let voiceSeq = 0;
+let currentVoice = null;
+/** Журнал запусков озвучки — для автотеста синхронизации. */
+export const voiceLog = [];
+
+/** Остановить звучащую реплику (мягко, без щелчка). */
+export function stopVoice() {
+  voiceSeq += 1;
+  if (!currentVoice || !ctx) return;
+  const { src, gain } = currentVoice;
+  const t = ctx.currentTime;
+  gain.gain.setTargetAtTime(0, t, 0.03);
+  try {
+    src.stop(t + 0.15);
+  } catch {
+    /* уже остановлена */
+  }
+  currentVoice = null;
+}
+
 /**
- * Озвучка реплики или выкрика. Возвращает Promise с длительностью в секундах (0 — записи нет).
+ * Озвучка реплики или выкрика. Предыдущая реплика обрывается, чтобы голоса не наслаивались.
+ * Возвращает Promise с длительностью в секундах (0 — записи нет или её перебила более новая).
  */
 export async function playVoice(id) {
   const file = fileFor(manifest.voices, id);
   if (!file || !enabled) return 0;
   if (!ensureContext()) return 0;
+  stopVoice();
+  const seq = voiceSeq;
   const buf = await loadBuffer(`./voices/${file}`);
-  if (!buf || !ready()) return buf?.duration ?? 0;
+  // пока файл грузился, началась другая реплика — эту уже не играем
+  if (seq !== voiceSeq || !buf || !ready()) return 0;
   duckMusic(buf.duration + 0.2);
-  return playBuffer(buf, { bus: voiceBus });
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const gain = ctx.createGain();
+  src.connect(gain).connect(voiceBus);
+  src.start();
+  currentVoice = { src, gain };
+  src.onended = () => {
+    if (currentVoice?.src === src) currentVoice = null;
+  };
+  voiceLog.push({ id, at: performance.now(), dur: buf.duration });
+  return buf.duration;
 }
 
 /** Заранее подгрузить озвучку (например, всех реплик сцены). */

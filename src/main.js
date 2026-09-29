@@ -12,7 +12,7 @@ import { startCamera, createHandTracker, CameraError } from './tracker.js';
 import { Arena } from './fx.js';
 import { drawPortrait, drawHero } from './characters.js';
 import { sealIcon, techIcon } from './icons.js';
-import { sfx, unlockAudio, setSound, isSoundOn, loadAudioManifest, playVoice, preloadVoices, hasVoice, audioGraph } from './audio.js';
+import { sfx, unlockAudio, setSound, isSoundOn, loadAudioManifest, playVoice, preloadVoices, hasVoice, audioGraph, stopVoice, voiceLog } from './audio.js';
 import { music } from './music.js';
 import { addRecord, getRecords, getSealBest, randomNinjaName, updateSealBest } from './storage.js';
 import {
@@ -103,6 +103,7 @@ function reportFrameIssue(now) {
 // ---------- сюжетный поход ----------
 
 let run = null;
+const sceneLog = [];
 
 function startStory() {
   run = {
@@ -453,8 +454,11 @@ const scene = {
     const lineRef = line;
     this.typed = 0;
     this.voiced = hasVoice(line.id);
+    stopVoice();
+    sceneLog.push({ id: line.id, at: now });
     playVoice(line.id).then((sec) => {
-      if (sec && this.line === lineRef) this.lineDur = Math.max(this.lineDur, sec * 1000 + 600);
+      // Реплика держится на экране, пока звучит голос (+ небольшая пауза), даже если файл начал играть с задержкой.
+      if (sec && this.line === lineRef) this.lineDur = Math.max(this.lineDur, performance.now() - this.lineStart + sec * 1000 + 450);
     });
     document.querySelector('.manga').style.visibility = 'visible';
     $('scene-who').textContent = sp.name;
@@ -1075,4 +1079,6 @@ window.__shinobi = {
   music,
   audioGraph,
   sfx,
+  voiceLog,
+  sceneLog,
 };
