@@ -8,7 +8,7 @@
 
 **Команда:** _Team Jacket_
 **Деплой:** https://shinobi-motion.vercel.app
-**Код:** https://github.com/ulacoder/shinobi-motion
+**Код:** https://github.com/ulacoder/shinobi-mmotion
 
 ---
 
