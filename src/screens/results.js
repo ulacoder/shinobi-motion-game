@@ -58,9 +58,11 @@ export const results = {
     if (!res.mistakes.length) ul.append(el('li', '', 'Ошибок почти не было — чистая техника.'));
     for (const [hint, count] of res.mistakes) ul.append(el('li', '', `${hint}${count > 1 ? ` (×${count})` : ''}`));
     renderRecords($('records-results'), getRecords(), id);
+    this.res = res;
     this.choice ??= new GestureChoice($('screen-results'), {
-      snake: () => startStory(),
-      tiger: () => go('dojo'),
+      snake: () => go('menu'),
+      tiger: () => startStory({ quick: this.res.quick, chapter: this.res.chapter || 1 }),
+      dog: () => go('dojo'),
     });
     this.choice.reset();
     arena.setPlace(res.win ? 'dawn' : 'night');

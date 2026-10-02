@@ -441,6 +441,31 @@ export class Battle {
     return events;
   }
 
+  /**
+   * Своя печать из Кузницы: один жест — техника (без цепочки), перезарядка 4 с.
+   * tech — из forgedTechnique(); accuracy — совпадение с эталоном 0..1.
+   */
+  onForged(tech, accuracy, now) {
+    if (this.over) return [];
+    if (now - (this.forgedAt ?? -Infinity) < (tech.cooldownMs ?? 4000)) return [];
+    this.forgedAt = now;
+    this.stats.seals += 1;
+    this.stats.accSum += accuracy;
+    this.stats.accCount += 1;
+    this.resetChain();
+    const power = Math.max(0.6, Math.min(1, accuracy));
+    const combo = this.advanceCombo(tech, now);
+    const dmg = Math.round(tech.damage * power * combo.mult) + (combo.special?.bonus ?? 0);
+    this.enemyHp = Math.max(0, this.enemyHp - dmg);
+    this.stats.damage += dmg;
+    this.stats.techniques += 1;
+    this.chakra = Math.min(100, this.chakra + 14 * power);
+    const events = [{ type: 'cast', tech, power, accuracy, damage: dmg, ...combo }, { type: 'chain', chain: [] }];
+    if (this.chakra >= 100) events.push({ type: 'ultimate-ready' });
+    events.push(...this.checkEnd(now));
+    return events;
+  }
+
   /** Удар дракона: рубящий удар ладонью при полной чакре (если приём открыт). */
   onChop(power, now) {
     if (this.over || !this.ultimateReady || !this.unlocked.has('dragon')) return [];

@@ -58,6 +58,12 @@
         </div>
       </section>
 
+      <div id="back-cue" class="back-cue" hidden aria-live="polite">
+        <span class="back-fists" aria-hidden="true">✊✊</span>
+        <span class="back-text">Два кулака — в меню</span>
+        <span class="back-bar"><i id="back-fill"></i></span>
+      </div>
+
       <!-- 3. Меню -->
       <section id="screen-menu" class="screen">
         <header class="menu-head">
@@ -77,17 +83,11 @@
           <button class="choice" data-choice="tiger" type="button">
             <span class="choice-icon" data-seal="tiger"></span>
             <span class="choice-text">
-              <strong>Сюжет: сразу в бой</strong>
-              <span>Обе руки: указательный и средний вверх</span>
+              <strong>Сюжет · выбор главы</strong>
+              <span>Тигр: обе руки, указательный и средний вверх</span>
             </span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
-          <div class="chapters" aria-label="Начать сюжет с главы">
-            <span>Глава:</span>
-            <button type="button" data-chapter="1">1 · Подпешки</button>
-            <button type="button" data-chapter="2">2 · Пешки</button>
-            <button type="button" data-chapter="3">3 · Кагэро</button>
-          </div>
           <button class="choice" data-choice="bird" type="button">
             <span class="choice-icon" data-seal="bird"></span>
             <span class="choice-text">
@@ -139,6 +139,37 @@
         <div class="forge-btns">
           <button id="btn-skip" class="btn-ghost" type="button">Пропустить урок</button>
           <button id="btn-dojo-menu" class="btn-ghost" type="button">В меню (Esc)</button>
+        </div>
+      </section>
+
+      <!-- 4а. Выбор главы пальцами -->
+      <section id="screen-chapters" class="screen">
+        <header class="menu-head">
+          <h1 class="title title-sm">Выбери главу</h1>
+          <p class="subtitle">Покажи камере 1, 2 или 3 пальца одной рукой и держи секунду</p>
+        </header>
+        <div class="chapter-cards">
+          <button class="chapter-card" data-chapter="1" type="button">
+            <span class="chapter-num">1</span>
+            <span class="chapter-fingers" aria-hidden="true">☝</span>
+            <strong>Подпешки</strong>
+            <span>Мукадэ и Ябу · лес</span>
+            <span class="chapter-bar"><i></i></span>
+          </button>
+          <button class="chapter-card" data-chapter="2" type="button">
+            <span class="chapter-num">2</span>
+            <span class="chapter-fingers" aria-hidden="true">✌</span>
+            <strong>Пешки</strong>
+            <span>Близнецы Пепла · мост</span>
+            <span class="chapter-bar"><i></i></span>
+          </button>
+          <button class="chapter-card" data-chapter="3" type="button">
+            <span class="chapter-num">3</span>
+            <span class="chapter-fingers" aria-hidden="true">🤟</span>
+            <strong>Кагэро</strong>
+            <span>Кузница и бой с владыкой Затмения</span>
+            <span class="chapter-bar"><i></i></span>
+          </button>
         </div>
       </section>
 
@@ -283,12 +314,17 @@
         <div class="choices choices-row">
           <button class="choice" data-choice="snake" type="button">
             <span class="choice-icon" data-seal="snake"></span>
-            <span class="choice-text"><strong>Заново</strong><span>Раскрой обе ладони</span></span>
+            <span class="choice-text"><strong>В меню</strong><span>Раскрой обе ладони</span></span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
           <button class="choice" data-choice="tiger" type="button">
             <span class="choice-icon" data-seal="tiger"></span>
-            <span class="choice-text"><strong>В додзё</strong><span>Покажи Тигра</span></span>
+            <span class="choice-text"><strong>Ещё раз</strong><span>Покажи Тигра</span></span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+          </button>
+          <button class="choice" data-choice="dog" type="button">
+            <span class="choice-icon" data-seal="dog"></span>
+            <span class="choice-text"><strong>В додзё</strong><span>Покажи Собаку</span></span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
         </div>

@@ -201,9 +201,26 @@ export function describeTemplate(tpl) {
 
 const KANJI = ['炎', '風', '雷', '水', '光', '影', '月', '星', '鋼', '桜', '嵐', '牙'];
 const NAMES = ['Пламени', 'Ветра', 'Грома', 'Волны', 'Света', 'Тени', 'Луны', 'Звезды', 'Стали', 'Сакуры', 'Бури', 'Клыка'];
+// какой эффект показывает печать в бою — по стихии имени
+const EFFECTS = ['fire', 'wind', 'lightning', 'sphere', 'dragon', 'wind', 'sphere', 'lightning', 'wind', 'wind', 'lightning', 'fire'];
 
-/** Имя и иероглиф для новой печати (игрок не печатает с клавиатуры — придумываем сами). */
+/** Имя, иероглиф и стихия для новой печати (игрок не печатает с клавиатуры — придумываем сами). */
 export function nameForSeal(seed = Math.random()) {
   const i = Math.floor(seed * KANJI.length) % KANJI.length;
-  return { kanji: KANJI[i], name: `Печать ${NAMES[i]}` };
+  return { kanji: KANJI[i], name: `Печать ${NAMES[i]}`, effect: EFFECTS[i] };
+}
+
+export const FORGED_DAMAGE = 22;
+export const FORGED_COOLDOWN_MS = 4000;
+
+/** Выкованная печать как техника в бою: один жест, без цепочки, с перезарядкой. */
+export function forgedTechnique(seal) {
+  return {
+    id: 'forged',
+    name: seal.name,
+    glyph: seal.kanji,
+    effect: seal.effect ?? 'fire',
+    damage: FORGED_DAMAGE,
+    desc: 'Твоя печать из Кузницы: один жест — и техника. Игра выучила её по твоим снимкам.',
+  };
 }

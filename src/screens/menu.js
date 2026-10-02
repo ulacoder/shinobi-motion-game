@@ -11,7 +11,7 @@ export const menu = {
     renderRecords($('records-menu'), getRecords());
     this.choice ??= new GestureChoice($('screen-menu'), {
       snake: () => go('dojo'),
-      tiger: () => startStory(),
+      tiger: () => go('chapters'),
       bird: () => startStory({ quick: true }),
       dog: () => go('forge'),
     });
@@ -29,10 +29,5 @@ export const menu = {
     else reportFrameIssue(now);
   },
 };
-
-// Выбор главы мышкой — чтобы на показе сразу перейти к нужному месту сюжета.
-for (const b of document.querySelectorAll('[data-chapter]')) {
-  b.addEventListener('click', () => startStory({ chapter: Number(b.dataset.chapter) }));
-}
 
 registerScreen('menu', menu);

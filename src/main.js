@@ -17,6 +17,7 @@ import { fight } from './screens/fight.js';
 import { results } from './screens/results.js';
 import { chest } from './screens/chest.js';
 import { forge, forgeDebug } from './screens/forge.js';
+import { chapters } from './screens/chapters.js';
 
 fillSealIcons();
 
@@ -99,6 +100,8 @@ addEventListener('keydown', (e) => {
     go('menu');
   } else if (screen === 'forge' && (e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К')) {
     forge.restart();
+  } else if (screen === 'chapters' && /^[1-3]$/.test(e.key)) {
+    chapters.pick(Number(e.key));
   } else if ((screen === 'menu' || screen === 'results') && /^[1-4]$/.test(e.key)) {
     const buttons = [...$(`screen-${screen}`).querySelectorAll('[data-choice]')];
     buttons[Number(e.key) - 1]?.click();
@@ -141,6 +144,34 @@ let lastDetectAt = 0;
 let detectGap = 0;
 let detectCost = 8;
 let lastStampMs = 1;
+
+// ---------- «Два кулака — в меню»: навигация только руками с любого экрана ----------
+const BACK_HOLD_MS = 1500;
+const backCue = $('back-cue');
+const backFill = $('back-fill');
+let backSince = 0;
+const isFist = (h) => h.ext.index < 0.35 && h.ext.middle < 0.35 && h.ext.ring < 0.35 && h.ext.pinky < 0.4;
+function updateBackGesture(now) {
+  const screen = app.dataset.screen;
+  // в Кузнице во время записи и проверки руки заняты своим жестом (вдруг это и есть два кулака)
+  const busy = screen === 'forge' && forge.phase !== 'done';
+  const allowed = !['intro', 'error', 'menu'].includes(screen) && !busy;
+  const fists = allowed && state.hands.length === 2 && state.hands.every(isFist);
+  backSince = fists ? backSince || now : 0;
+  const p = backSince ? Math.min(1, (now - backSince) / BACK_HOLD_MS) : 0;
+  // подсказку видно всегда на спокойных экранах и только во время удержания — в бою и сценах
+  const calm = ['dojo', 'results', 'forge', 'chapters'].includes(screen);
+  backCue.hidden = !allowed || (!calm && !p);
+  backCue.classList.toggle('active', p > 0);
+  backCue.classList.toggle('dim', p === 0);
+  backFill.style.width = `${Math.round(p * 100)}%`;
+  if (p >= 1) {
+    backSince = 0;
+    sfx.success();
+    go('menu');
+  }
+}
+
 function loop(now) {
   const dt = Math.min(0.05, (now - prev) / 1000);
   frameAvg = frameAvg * 0.95 + (now - prev) * 0.05;
@@ -172,6 +203,7 @@ function loop(now) {
     state.lastBright = brightness.sample(video, now);
   }
 
+  updateBackGesture(now);
   const controller = state.controller;
   if (controller) controller.update(now, dt);
 

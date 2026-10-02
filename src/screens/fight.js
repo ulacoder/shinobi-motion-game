@@ -14,6 +14,8 @@ import {
 } from '../app/context.js';
 import { nextStep, finishRun } from '../app/story.js';
 import { cutin } from './cutin.js';
+import { evaluateTemplate, forgedTechnique } from '../forge.js';
+import { getForged } from '../storage.js';
 
 export const fight = {
   detector: new SealDetector(),
@@ -23,11 +25,17 @@ export const fight = {
   /** Какие техники показать в списке: базовые + открытые в сундуках. */
   techOpts(extra) {
     const techs = [...Object.values(TECHNIQUES), ...state.run.unlocked.filter((id) => EXTRA_TECHNIQUES[id]).map((id) => EXTRA_TECHNIQUES[id])];
-    return { techs, dragon: state.run.unlocked.includes('dragon'), ...extra };
+    const forged = this.forged ? { name: this.forged.tech.name, kanji: this.forged.tech.glyph } : null;
+    return { techs, dragon: state.run.unlocked.includes('dragon'), forged, ...extra };
   },
 
   enter(step) {
     this.step = step;
+    // Своя печать из Кузницы (последняя выкованная) — техника в любом бою
+    const seal = getForged()[0];
+    this.forged = seal?.tpl ? { seal, tech: forgedTechnique(seal) } : null;
+    this.forgedArmed = true;
+    this.forgedSince = 0;
     // в быстром демо у Кагэро меньше здоровья, чтобы бой укладывался в минуту-полторы
     this.enemy = step.hp ? { ...ENEMIES[step.enemy], hp: step.hp } : ENEMIES[step.enemy];
     this.battle = null;
@@ -101,7 +109,16 @@ export const fight = {
           if (id === 'sphere') (arena.sphere(e.power), sfx.sphere());
           if (id === 'wind') (arena.wind(e.power), sfx.wind());
           if (id === 'dragon') (arena.dragon(e.power), sfx.dragon());
-          const hitDelay = { sphere: 900, fire: 550, wind: 500, dragon: 850 }[id] ?? 420;
+          // своя печать: эффект по её стихии
+          const fx = id === 'forged' ? e.tech.effect : id;
+          if (id === 'forged') {
+            if (fx === 'fire') (arena.fireball(e.power), sfx.fire());
+            else if (fx === 'lightning') (arena.lightning(e.power), sfx.lightning());
+            else if (fx === 'sphere') (arena.sphere(e.power), sfx.sphere());
+            else if (fx === 'dragon') (arena.dragon(e.power), sfx.dragon());
+            else (arena.wind(e.power), sfx.wind());
+          }
+          const hitDelay = { sphere: 900, fire: 550, wind: 500, dragon: 850 }[fx] ?? 420;
           if (e.damage) setTimeout(() => (arena.damageText(e.damage), sfx.hit()), hitDelay);
           const weakHint = this.weakHint();
           if (e.power < 0.9 && weakHint) {
@@ -175,6 +192,38 @@ export const fight = {
           break;
       }
     }
+  },
+
+  /**
+   * Своя печать: если жест совпал с эталоном из Кузницы (и это не встроенная печать) и держится 0,4 с — техника.
+   * Повтор — только после того, как жест «отпустили». Возвращает true, пока жест совпадает (тогда молчат подсказки печатей).
+   */
+  updateForged(now, best) {
+    if (!this.forged) return false;
+    const ev = evaluateTemplate(this.forged.seal.tpl, state.hands);
+    const match = ev.passed && !best?.passed;
+    if (!match) {
+      this.forgedSince = 0;
+      if (ev.accuracy < 0.55) this.forgedArmed = true;
+      return false;
+    }
+    this.overlayTone = 'pass';
+    camSeal.hidden = true;
+    if (!this.forgedArmed) return true;
+    if (!this.forgedSince) this.forgedSince = now;
+    if (now - this.forgedSince < 400) return true;
+    this.forgedArmed = false;
+    this.forgedSince = 0;
+    const events = this.battle.onForged(this.forged.tech, ev.accuracy, now);
+    if (!events.length) {
+      sensei.show(`${this.forged.tech.name} перезаряжается — через пару секунд`, 'info', now, { lock: 900 });
+      return true;
+    }
+    sfx.seal();
+    const form = snapshotHands(state.hands);
+    for (const e of events) if (e.type === 'cast') e.forms = [form];
+    this.handle(events, now);
+    return true;
   },
 
   /** Счётчик комбо в аниме-стиле. */
@@ -300,6 +349,7 @@ export const fight = {
       const res = this.detector.update(state.hands, now);
       const best = res.best;
       showCamSeal(best);
+      const forgedNow = this.updateForged(now, best);
       this.overlayTone = best?.passed ? 'pass' : best && best.accuracy >= NEAR_ACCURACY ? 'near' : 'idle';
       if (best && !best.passed && best.accuracy >= NEAR_ACCURACY) this.overlayBad = badFingers(best);
       for (const e of res.events) {
@@ -311,7 +361,7 @@ export const fight = {
           const best = state.run.bestForms[e.seal];
           if (!best || e.accuracy > best.accuracy) state.run.bestForms[e.seal] = { form, accuracy: e.accuracy };
           this.handle(b.onSeal(e.seal, e.accuracy, now), now);
-        } else if (e.type === 'hint' && !issue) {
+        } else if (e.type === 'hint' && !issue && !forgedNow) {
           b.noteMistake(e.hint, now);
           sensei.show(e.hint, 'warn', now);
         }

@@ -269,10 +269,10 @@ const sealHanko = (id, cls = '') => {
 
 export function renderTechList(
   ul,
-  { chain = [], ultimateReady = false, showUltimate = true, showDesc = false, techs = Object.values(TECHNIQUES), dragon = false } = {},
+  { chain = [], ultimateReady = false, showUltimate = true, showDesc = false, techs = Object.values(TECHNIQUES), dragon = false, forged = null } = {},
 ) {
   ul.replaceChildren();
-  ul.classList.toggle('many', techs.length + (showUltimate ? 1 + (dragon ? 1 : 0) : 0) > 4);
+  ul.classList.toggle('many', techs.length + (forged ? 1 : 0) + (showUltimate ? 1 + (dragon ? 1 : 0) : 0) > 4);
   for (const t of techs) {
     const li = el('li', 'tech');
     const matches = chain.length && chain.every((s, i) => t.seq[i] === s);
@@ -293,6 +293,14 @@ export function renderTechList(
     });
     li.append(seq);
     if (showDesc) li.append(el('span', 'tech-desc', t.desc));
+    ul.append(li);
+  }
+  if (forged) {
+    // своя печать из Кузницы: один жест — техника
+    const li = el('li', 'tech forged');
+    li.append(el('span', 'tech-glyph tech-kanji', forged.kanji), el('span', 'tech-name', forged.name));
+    li.append(el('span', 'tech-seq', 'Твоя печать: покажи свой жест'));
+    if (showDesc) li.append(el('span', 'tech-desc', 'Выкована в Кузнице'));
     ul.append(li);
   }
   if (showUltimate) {
