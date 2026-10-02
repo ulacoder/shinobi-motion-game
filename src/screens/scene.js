@@ -128,7 +128,7 @@ export const scene = {
   skip(now) {
     if (!this.line) return;
     // жест ещё не сложен: клик или пробел засчитывают его (запасной путь для показа)
-    if (this.wait && !this.wait.done) return this.gestureDone(now, 1);
+    if (this.wait && !this.wait.done) return SEALS[this.wait.seal].coop ? this.skipCoop(now) : this.gestureDone(now, 1);
     const typed = Math.floor((now - this.lineStart) / 28);
     if (typed < this.line.text.length) this.lineStart = now - this.line.text.length * 28;
     else this.showLine(now);
@@ -199,6 +199,17 @@ Object.assign(scene, {
     if (!reportFrameIssue(now) && ev.hint && now - this.lineStart > 1200) sensei.show(ev.hint, 'warn', now);
   },
 
+  /** Печать на двоих пропущена (нет второго игрока): без эффектов и без кадра для манги. */
+  skipCoop(now) {
+    const w = this.wait;
+    w.done = now;
+    this.overlayBad = null;
+    this.overlayGuide = null;
+    sfx.page();
+    $('scene-coop-note').textContent = 'Пропустили. Печать дружбы ждёт вас вдвоём в следующий раз';
+    sensei.show('Ничего, Печать дружбы сложите вдвоём в следующий раз', 'info', now, { lock: 1100 });
+  },
+
   /** Места игроков: none — никого, one-hand — одна рука, one — обе руки одного человека, two — вас двое. */
   paintCoop(mode) {
     if (mode === this.coopMode) return;
@@ -210,7 +221,7 @@ Object.assign(scene, {
     box.classList.toggle('together', mode === 'two');
     box.classList.toggle('solo', mode === 'one');
     $('scene-coop-note').textContent = {
-      none: 'Ждём двоих: встаньте рядом перед камерой. Нет второго игрока — пробел',
+      none: 'Ждём двоих: встаньте рядом перед камерой',
       'one-hand': 'Игрок 1 на месте. Где второй? Позови друга',
       one: 'Это обе руки одного человека. Нужен второй игрок — каждый даёт правую руку',
       unknown: 'Покажите обе руки камере целиком — проверяю, что вас двое',
@@ -254,6 +265,12 @@ Object.assign(scene, {
       { lock: 1100 },
     );
   },
+});
+
+// «Пропустить» на печати вдвоём: кнопка внутри пузыря — клик не должен ещё и листать реплику
+$('scene-coop-skip').addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (scene.wait && !scene.wait.done) scene.skipCoop(performance.now());
 });
 
 registerScreen('scene', scene);

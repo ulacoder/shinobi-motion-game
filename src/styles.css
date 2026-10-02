@@ -3530,3 +3530,8 @@ button {
   width: 32px;
   height: 32px;
 }
+
+.coop-skip {
+  grid-column: 1 / -1;
+  justify-self: start;
+}

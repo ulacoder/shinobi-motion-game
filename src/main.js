@@ -180,10 +180,12 @@ function updateBackGesture(now) {
   const okBoth = allowed && state.hands.length === 2 && state.hands.every(isOkSign);
   backSince = okBoth ? backSince || now : 0;
   const p = backSince ? Math.min(1, (now - backSince) / BACK_HOLD_MS) : 0;
-  const cues = CUE_SCREENS.includes(screen);
+  // на печати вдвоём в сцене тоже есть «пропустить» — «окей» одной рукой
+  const coopSkip = screen === 'scene' && scene.wait && !scene.wait.done && !$('scene-coop').hidden;
+  const cues = CUE_SCREENS.includes(screen) || coopSkip;
   // подсказку видно всегда на спокойных экранах и только во время удержания — в бою и сценах
   const calm = ['results', 'chapters', 'manga', 'path'].includes(screen);
-  backCue.hidden = !allowed || cues || (!calm && !p);
+  backCue.hidden = !allowed || CUE_SCREENS.includes(screen) || (!calm && !p);
   backCue.classList.toggle('active', p > 0);
   backCue.classList.toggle('dim', p === 0);
   backRing.style.strokeDashoffset = String(119.4 * (1 - p));
