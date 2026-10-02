@@ -180,6 +180,8 @@ export class Overlay {
     }
     this.empty = false;
     const { w, h, dpr } = this.fit();
+    // Толщина линий растёт с размером камеры: на большом экране и через демонстрацию экрана скелет виден чётко.
+    const k = dpr * Math.max(1, (this.box?.width || 520) / 520);
     const ctx = this.ctx;
     ctx.clearRect(0, 0, w, h);
     const px = (p) => ({ x: (p.x / aspect) * w, y: p.y * h });
@@ -189,9 +191,18 @@ export class Overlay {
     for (const hand of hands) {
       const pts = hand.screen.map(px);
       ctx.lineCap = 'round';
-      ctx.lineWidth = 4 * dpr;
+      // тёмная подложка под линиями — скелет читается на любом фоне
+      ctx.lineWidth = 7 * k;
+      ctx.strokeStyle = 'rgba(10, 12, 30, 0.55)';
+      for (const [a, b] of HAND_CONNECTIONS) {
+        ctx.beginPath();
+        ctx.moveTo(pts[a].x, pts[a].y);
+        ctx.lineTo(pts[b].x, pts[b].y);
+        ctx.stroke();
+      }
+      ctx.lineWidth = 4 * k;
       ctx.strokeStyle = base;
-      ctx.globalAlpha = 0.9;
+      ctx.globalAlpha = 0.95;
       for (const [a, b] of HAND_CONNECTIONS) {
         ctx.beginPath();
         ctx.moveTo(pts[a].x, pts[a].y);
@@ -200,7 +211,7 @@ export class Overlay {
       }
       if (bad) {
         ctx.strokeStyle = '#ff5a48';
-        ctx.lineWidth = 7 * dpr;
+        ctx.lineWidth = 8 * k;
         for (const [finger, idx] of Object.entries(FINGER_POINTS)) {
           if (!bad.has(`${hand.side}:${finger}`)) continue;
           ctx.beginPath();
@@ -212,7 +223,7 @@ export class Overlay {
       ctx.fillStyle = '#efe6cf';
       for (const p of pts) {
         ctx.beginPath();
-        ctx.arc(p.x, p.y, 3.2 * dpr, 0, Math.PI * 2);
+        ctx.arc(p.x, p.y, 3.4 * k, 0, Math.PI * 2);
         ctx.fill();
       }
     }

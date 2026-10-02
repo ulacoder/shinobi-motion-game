@@ -15,10 +15,11 @@ export const results = {
     $('res-kicker').textContent = res.reason;
     $('res-title').textContent = res.win ? 'Победа' : 'Поражение';
     $('res-score').textContent = String(res.score);
+    const fromChapter = res.chapter > 1 ? ` (с главы ${res.chapter})` : '';
     $('res-stage').textContent = res.quick
-      ? res.win ? 'Быстрый бой: Кагэро повержен. Полный сюжет — «Сюжет» в меню' : 'Быстрый бой с Кагэро'
+      ? res.win ? 'Быстрое демо: Кагэро повержен. Полный сюжет — «Сюжет» в меню' : 'Быстрое демо: бой с Кагэро'
       : res.win
-      ? `Пройдены все 3 этапа, повержено врагов: ${res.stats.defeated} из ${FIGHTS_TOTAL}`
+      ? `Сюжет пройден${fromChapter}, повержено врагов: ${res.stats.defeated}`
       : `Этап ${res.stage} · ${STAGE_NAMES[res.stage]} · повержено врагов: ${res.stats.defeated} из ${FIGHTS_TOTAL}`;
     const s = res.stats;
     const stats = [

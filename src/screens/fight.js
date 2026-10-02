@@ -4,7 +4,7 @@ import { NEAR_ACCURACY } from '../seals.js';
 import { SealDetector } from '../detector.js';
 import { CircleTracker, isPointing } from '../air.js';
 import { ChopDetector } from '../chop.js';
-import { Battle, TECHNIQUES, EXTRA_TECHNIQUES, ENEMIES, STORY, STAGE_NAMES, PLAYER_MAX_HP } from '../battle.js';
+import { Battle, TECHNIQUES, EXTRA_TECHNIQUES, ENEMIES, STAGE_NAMES, PLAYER_MAX_HP } from '../battle.js';
 import { drawPortrait } from '../characters.js';
 import { sfx, playVoice } from '../audio.js';
 import { music } from '../music.js';
@@ -28,9 +28,11 @@ export const fight = {
 
   enter(step) {
     this.step = step;
-    this.enemy = ENEMIES[step.enemy];
+    // в быстром демо у Кагэро меньше здоровья, чтобы бой укладывался в минуту-полторы
+    this.enemy = step.hp ? { ...ENEMIES[step.enemy], hp: step.hp } : ENEMIES[step.enemy];
     this.battle = null;
-    const firstFight = STORY.findIndex((s) => s.type === 'fight') === state.run.step;
+    const story = state.run.story;
+    const firstFight = story.findIndex((s) => s.type === 'fight') === state.run.step;
     this.countdownUntil = performance.now() + (firstFight ? 3200 : 1300);
     this.endAt = 0;
     this.endAction = null;
@@ -63,10 +65,10 @@ export const fight = {
     const dots = $('stage-dots');
     dots.replaceChildren();
     let k = 0;
-    for (const s of STORY) {
+    for (const s of story) {
       if (s.type !== 'fight') continue;
-      const before = STORY.indexOf(s) < state.run.step;
-      const i = el('i', s === step ? 'now' : k < state.run.stats.defeated || (state.run.quick && before) ? 'done' : '');
+      const before = story.indexOf(s) < state.run.step;
+      const i = el('i', s === step ? 'now' : k < state.run.stats.defeated || ((state.run.quick || state.run.chapter > 1) && before) ? 'done' : '');
       dots.append(i);
       k++;
     }

@@ -30,4 +30,9 @@ export const menu = {
   },
 };
 
+// Выбор главы мышкой — чтобы на показе сразу перейти к нужному месту сюжета.
+for (const b of document.querySelectorAll('[data-chapter]')) {
+  b.addEventListener('click', () => startStory({ chapter: Number(b.dataset.chapter) }));
+}
+
 registerScreen('menu', menu);
