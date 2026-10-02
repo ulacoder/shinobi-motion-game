@@ -62,6 +62,8 @@ export const scene = {
   },
 
   exit() {
+    stopVoice();
+    this.line = null;
     $('title-card').hidden = true;
     document.querySelector('.bubble').removeEventListener('click', this.onClick);
   },

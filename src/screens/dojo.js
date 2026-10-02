@@ -12,7 +12,7 @@ import { music } from '../music.js';
 import { getSealBest, updateSealBest } from '../storage.js';
 import { $, el, GestureChoice, renderTechList, stamp } from '../ui.js';
 import {
-  arena, overlay, sensei, state, registerScreen, setText, setWidth, pct, SHORT, badFingers, reportFrameIssue,
+  arena, overlay, sensei, state, registerScreen, go, setText, setWidth, pct, SHORT, badFingers, reportFrameIssue,
 } from '../app/context.js';
 import { startStory } from '../app/story.js';
 
@@ -277,5 +277,6 @@ export const dojo = {
 };
 
 $('btn-skip').addEventListener('click', () => dojo.skip());
+$('btn-dojo-menu').addEventListener('click', () => go('menu'));
 
 registerScreen('dojo', dojo);

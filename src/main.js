@@ -94,9 +94,11 @@ addEventListener('pointerdown', unlockAudio, { once: true });
 // Запасное управление с клавиатуры: 1–3 — пункты меню и итогов, пробел/Enter — следующая реплика.
 addEventListener('keydown', (e) => {
   const screen = app.dataset.screen;
-  if (screen === 'forge' && (e.key === 'Escape' || e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К')) {
-    if (e.key === 'Escape') go('menu');
-    else forge.restart();
+  if (e.key === 'Escape' && screen !== 'menu' && screen !== 'intro' && screen !== 'error') {
+    // Esc — назад в меню с любого экрана (удобно на показе)
+    go('menu');
+  } else if (screen === 'forge' && (e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К')) {
+    forge.restart();
   } else if ((screen === 'menu' || screen === 'results') && /^[1-4]$/.test(e.key)) {
     const buttons = [...$(`screen-${screen}`).querySelectorAll('[data-choice]')];
     buttons[Number(e.key) - 1]?.click();
