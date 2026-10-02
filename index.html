@@ -59,9 +59,9 @@
       </section>
 
       <div id="back-cue" class="back-cue" hidden aria-live="polite">
-        <span class="back-fists" aria-hidden="true">✊✊</span>
-        <span class="back-text">Два кулака — в меню</span>
-        <span class="back-bar"><i id="back-fill"></i></span>
+        <span id="back-icon" class="choice-icon choice-icon-sm" aria-hidden="true"></span>
+        <span class="back-text">«Окей» двумя руками — в меню</span>
+        <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle id="back-ring" cx="22" cy="22" r="19" /></svg>
       </div>
 
       <!-- 3. Меню -->
@@ -99,7 +99,7 @@
           <button class="choice choice-new" data-choice="dog" type="button">
             <span class="choice-icon" data-seal="dog"></span>
             <span class="choice-text">
-              <strong>Кузница печатей <em class="new-tag">новое</em></strong>
+              <strong>Кузница печатей <span class="hanko hanko-sm new-hanko" title="Новое">新</span></strong>
               <span>Придумай свой жест — игра выучит его. Собака: кулак + указательный вверх</span>
             </span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
@@ -148,27 +148,21 @@
           <h1 class="title title-sm">Выбери главу</h1>
           <p class="subtitle">Покажи камере 1, 2 или 3 пальца одной рукой и держи секунду</p>
         </header>
-        <div class="chapter-cards">
-          <button class="chapter-card" data-chapter="1" type="button">
-            <span class="chapter-num">1</span>
-            <span class="chapter-fingers" aria-hidden="true">☝</span>
-            <strong>Подпешки</strong>
-            <span>Мукадэ и Ябу · лес</span>
-            <span class="chapter-bar"><i></i></span>
+        <div class="choices chapter-choices">
+          <button class="choice" data-chapter="1" type="button">
+            <span class="choice-icon" data-fingers="1"></span>
+            <span class="choice-text"><strong>Глава 1 · Подпешки</strong><span>Мукадэ и Ябу в лесу. Один палец вверх</span></span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
-          <button class="chapter-card" data-chapter="2" type="button">
-            <span class="chapter-num">2</span>
-            <span class="chapter-fingers" aria-hidden="true">✌</span>
-            <strong>Пешки</strong>
-            <span>Близнецы Пепла · мост</span>
-            <span class="chapter-bar"><i></i></span>
+          <button class="choice" data-chapter="2" type="button">
+            <span class="choice-icon" data-fingers="2"></span>
+            <span class="choice-text"><strong>Глава 2 · Пешки</strong><span>Близнецы Пепла на мосту. Два пальца</span></span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
-          <button class="chapter-card" data-chapter="3" type="button">
-            <span class="chapter-num">3</span>
-            <span class="chapter-fingers" aria-hidden="true">🤟</span>
-            <strong>Кагэро</strong>
-            <span>Кузница и бой с владыкой Затмения</span>
-            <span class="chapter-bar"><i></i></span>
+          <button class="choice" data-chapter="3" type="button">
+            <span class="choice-icon" data-fingers="3"></span>
+            <span class="choice-text"><strong>Глава 3 · Кагэро</strong><span>Кузница и бой с владыкой Затмения. Три пальца</span></span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
         </div>
       </section>
@@ -222,10 +216,11 @@
       <!-- 5. Бой -->
       <section id="screen-battle" class="screen">
         <div id="steal" class="steal" hidden aria-live="assertive">
-          <p class="steal-title">Кагэро украл твою печать!</p>
+          <span id="steal-hanko" class="hanko hanko-lg steal-hanko">奪</span>
+          <p class="steal-title">Кагэро украл печать!</p>
           <canvas id="steal-hands" width="420" height="300"></canvas>
           <p id="steal-sub" class="steal-sub">Повтори её быстрее него</p>
-          <div class="steal-bar"><i id="steal-fill"></i></div>
+          <div class="bubble-timer steal-bar"><div id="steal-fill"></div></div>
         </div>
         <div class="hud-top">
           <div class="fighter fighter-hero">
@@ -275,9 +270,10 @@
             <span id="scene-who" class="bubble-who"></span>
             <p id="scene-text"></p>
             <div id="scene-gesture" class="scene-gesture" hidden>
-              <span id="scene-gesture-icon" class="scene-gesture-icon"></span>
+              <span id="scene-gesture-icon" class="choice-icon scene-gesture-icon"></span>
               <span class="scene-gesture-text"><b id="scene-gesture-name">Собака</b><span id="scene-gesture-how"></span></span>
-              <span class="scene-gesture-meter"><i id="scene-gesture-fill"></i></span>
+              <span class="hanko hanko-sm scene-gesture-hanko" aria-hidden="true">印</span>
+              <span class="bubble-timer scene-gesture-meter"><i id="scene-gesture-fill"></i></span>
             </div>
             <div class="bubble-foot">
               <span class="skip-cue"><span class="choice-icon choice-icon-sm" data-seal="snake"></span> Раскрой ладони, кликни или нажми пробел — дальше</span>
@@ -310,7 +306,7 @@
       <section id="screen-results" class="screen">
         <aside class="scroll palm-panel" aria-label="Отчёт ладони">
           <h3>Отчёт ладони</h3>
-          <canvas id="palm-report" width="544" height="340"></canvas>
+          <div id="palm-report" class="palm-report"></div>
           <p id="palm-worst" class="palm-worst"></p>
           <p class="palm-legend"><i class="ok"></i> без ошибок <i class="mid"></i> иногда <i class="bad"></i> чаще всего</p>
         </aside>

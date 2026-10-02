@@ -1,5 +1,7 @@
-// «Отчёт ладони»: две большие ладони, каждый палец окрашен по числу ошибок в бою —
-// зелёный (ни одной) → жёлтый → красный (чаще всего подводил). Цифра на пальце — сколько раз.
+// «Отчёт ладони»: две большие ладони в стиле иконок печатей, каждый палец окрашен по числу ошибок в бою:
+// обычный цвет кожи — ни одной, золото — иногда, красная печать — чаще всего. Число над пальцем — сколько раз.
+
+import { palmsIcon } from './icons.js';
 
 const FINGERS = ['thumb', 'index', 'middle', 'ring', 'pinky'];
 const NAMES = { thumb: 'большой', index: 'указательный', middle: 'средний', ring: 'безымянный', pinky: 'мизинец' };
@@ -36,80 +38,17 @@ export function describeWorst(misses) {
 }
 
 const lerp = (a, b, t) => Math.round(a + (b - a) * t);
+/** Цвет пальца: без ошибок — обычная кожа (как на иконках печатей), дальше золото → красная печать. */
 function heat(count, max) {
-  if (!count) return '#5fbf7f';
+  if (!count) return null;
   const t = Math.min(1, count / Math.max(1, max));
-  // жёлтый → красный
-  return `rgb(${lerp(240, 214, t)}, ${lerp(182, 58, t)}, ${lerp(74, 40, t)})`;
+  return `rgb(${lerp(240, 204, t)}, ${lerp(182, 51, t)}, ${lerp(74, 37, t)})`;
 }
 
-/** Рисует две ладони на canvas (ширина ≈ 1.6 × высоты). */
-export function drawPalmReport(canvas, misses = {}) {
-  const ctx = canvas.getContext('2d');
-  const { width: W, height: H } = canvas;
-  ctx.clearRect(0, 0, W, H);
+/** Две ладони в стиле иконок печатей: каждый палец окрашен по числу ошибок, число — над пальцем. */
+export function renderPalmReport(node, misses = {}) {
   const g = groupMisses(misses);
   const max = Math.max(1, ...Object.values(g.left), ...Object.values(g.right));
-  const s = H / 290;
-
-  const palm = (cx, side) => {
-    // как в зеркале: у левой руки большой палец смотрит к центру (вправо), у правой — влево
-    const dir = side === 'left' ? 1 : -1;
-    const base = H * 0.64;
-    const pw = 120 * s;
-    const ph = 118 * s;
-    ctx.fillStyle = '#efe6cf';
-    ctx.strokeStyle = '#2a1f1a';
-    ctx.lineWidth = 4 * s;
-    ctx.beginPath();
-    ctx.roundRect(cx - pw / 2, base - ph / 2, pw, ph, 30 * s);
-    ctx.fill();
-    ctx.stroke();
-    // пальцы: x-смещение от центра ладони, длина
-    const fingers = {
-      index: { dx: 40, len: 92 },
-      middle: { dx: 13, len: 104 },
-      ring: { dx: -14, len: 96 },
-      pinky: { dx: -40, len: 74 },
-    };
-    const label = (x, y, n) => {
-      if (!n) return;
-      ctx.fillStyle = '#2a1f1a';
-      ctx.font = `800 ${22 * s}px Manrope, system-ui, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String(n), x, y);
-    };
-    for (const [f, { dx, len }] of Object.entries(fingers)) {
-      const x = cx + dx * s * dir;
-      const top = base - ph / 2 - len * s;
-      ctx.fillStyle = heat(g[side][f], max);
-      ctx.beginPath();
-      ctx.roundRect(x - 12 * s, top, 24 * s, len * s + 14 * s, 12 * s);
-      ctx.fill();
-      ctx.stroke();
-      label(x, top + 22 * s, g[side][f]);
-    }
-    // большой палец — наискосок в сторону
-    ctx.save();
-    ctx.translate(cx + dir * (pw / 2 - 6 * s), base + 6 * s);
-    ctx.rotate(dir * -0.75);
-    ctx.fillStyle = heat(g[side].thumb, max);
-    ctx.beginPath();
-    ctx.roundRect(-13 * s, -78 * s, 26 * s, 84 * s, 13 * s);
-    ctx.fill();
-    ctx.stroke();
-    ctx.rotate(dir * 0.75);
-    ctx.restore();
-    if (g[side].thumb) {
-      const tx = cx + dir * (pw / 2 + 38 * s);
-      label(tx, base - 40 * s, g[side].thumb);
-    }
-    ctx.fillStyle = '#5d4d42';
-    ctx.font = `700 ${18 * s}px Manrope, system-ui, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.fillText(side === 'left' ? 'левая' : 'правая', cx, base + ph / 2 + 24 * s);
-  };
-  palm(W * 0.27, 'left');
-  palm(W * 0.73, 'right');
+  const fills = (side) => Object.fromEntries(Object.entries(g[side]).map(([f, n]) => [f, heat(n, max)]));
+  node.innerHTML = palmsIcon(fills('left'), fills('right'), g);
 }

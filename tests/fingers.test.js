@@ -33,3 +33,15 @@ test('выбор главы: подсказки', () => {
   assert.match(c.update(hand(SHAPES.open), 0).hint, /пять пальцев/);
   assert.match(c.update(hand(SHAPES.fist), 100).hint, /кулак/);
 });
+
+test('знак «окей»: кольцо из большого и указательного, три пальца прямые', async () => {
+  const { isOkSign } = await import('../src/fingers.js');
+  const base = hand(SHAPES.open)[0];
+  // сводим кончики большого и указательного вместе
+  const screen = base.screen.map((p) => ({ ...p }));
+  screen[8] = { ...screen[4], x: screen[4].x + 0.01 };
+  const ok = { ...base, screen, ext: { ...base.ext, index: 0.4 } };
+  assert.equal(isOkSign(ok), true);
+  assert.equal(isOkSign(base), false); // раскрытая ладонь — нет
+  assert.equal(isOkSign(hand(SHAPES.fist)[0]), false); // кулак — нет
+});

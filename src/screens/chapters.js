@@ -6,7 +6,10 @@ import { sfx } from '../audio.js';
 import { arena, sensei, state, registerScreen, reportFrameIssue } from '../app/context.js';
 import { startStory } from '../app/story.js';
 
-const cards = () => [...document.querySelectorAll('.chapter-card')];
+import { fingersIcon } from '../icons.js';
+
+const cards = () => [...document.querySelectorAll('#screen-chapters [data-chapter]')];
+for (const node of document.querySelectorAll('[data-fingers]')) node.innerHTML = fingersIcon(Number(node.dataset.fingers), { size: 60 });
 
 export const chapters = {
   picker: new FingerChoice({ holdMs: 1000 }),
@@ -24,7 +27,7 @@ export const chapters = {
   exit() {
     for (const c of cards()) {
       c.classList.remove('active');
-      c.querySelector('.chapter-bar i').style.width = '0%';
+      c.querySelector('.ring circle').style.strokeDashoffset = '119.4';
     }
   },
 
@@ -40,7 +43,8 @@ export const chapters = {
       const n = Number(c.dataset.chapter);
       const on = r.count === n && r.progress > 0;
       c.classList.toggle('active', on);
-      c.querySelector('.chapter-bar i').style.width = `${Math.round((on ? r.progress : 0) * 100)}%`;
+      // кольцо удержания — как у пунктов меню
+      c.querySelector('.ring circle').style.strokeDashoffset = String(119.4 * (1 - (on ? r.progress : 0)));
     }
     this.lastCount = r.count;
     if (r.chosen) return this.pick(r.chosen);

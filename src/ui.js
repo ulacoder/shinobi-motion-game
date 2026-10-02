@@ -374,8 +374,8 @@ export class Overlay {
       ctx.save();
       ctx.lineCap = 'round';
       // весь призрак — полупрозрачный белый
-      ctx.globalAlpha = 0.35;
-      ctx.strokeStyle = '#ffffff';
+      ctx.globalAlpha = 0.45;
+      ctx.strokeStyle = '#efe6cf';
       ctx.lineWidth = 12 * k;
       for (const [a, b] of HAND_CONNECTIONS) {
         ctx.beginPath();
@@ -385,8 +385,8 @@ export class Overlay {
       }
       // пальцы, которые надо исправить, — зелёные и пульсируют; стрелка от живого кончика к нужному
       ctx.globalAlpha = pulse;
-      ctx.strokeStyle = '#6fd08c';
-      ctx.shadowColor = '#6fd08c';
+      ctx.strokeStyle = '#f0b64a';
+      ctx.shadowColor = '#cc3325';
       ctx.shadowBlur = 14 * k;
       for (const finger of Object.keys(wants)) {
         const idx = FINGER_POINTS[finger];
@@ -411,7 +411,7 @@ export class Overlay {
           ctx.lineTo(to.x - 14 * k * Math.cos(ang - 0.5), to.y - 14 * k * Math.sin(ang - 0.5));
           ctx.lineTo(to.x - 14 * k * Math.cos(ang + 0.5), to.y - 14 * k * Math.sin(ang + 0.5));
           ctx.closePath();
-          ctx.fillStyle = '#6fd08c';
+          ctx.fillStyle = '#f0b64a';
           ctx.fill();
         }
       }
@@ -463,8 +463,10 @@ export function renderTechList(
   if (forged) {
     // своя печать из Кузницы: один жест — техника
     const li = el('li', 'tech forged');
-    li.append(el('span', 'tech-glyph tech-kanji', forged.kanji), el('span', 'tech-name', forged.name));
-    li.append(el('span', 'tech-seq', 'Твоя печать: покажи свой жест'));
+    const glyph = el('span', 'tech-glyph');
+    glyph.append(el('span', 'hanko', forged.kanji));
+    li.append(glyph, el('span', 'tech-name', forged.name));
+    li.append(el('span', 'tech-seq', 'Своя печать из Кузницы: покажи свой жест'));
     if (showDesc) li.append(el('span', 'tech-desc', 'Выкована в Кузнице'));
     ul.append(li);
   }

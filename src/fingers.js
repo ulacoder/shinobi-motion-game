@@ -59,3 +59,14 @@ export class FingerChoice {
     return { count, progress, chosen, hint };
   }
 }
+
+/**
+ * Знак «окей»: кончики большого и указательного сомкнуты кольцом, остальные три пальца прямые.
+ * Обе руки «окей» — жест «в меню»: случайно так руки не держат, и это не одна из печатей.
+ */
+export function isOkSign(hand) {
+  const e = hand.ext;
+  const p = hand.screen;
+  const pinch = Math.hypot(p[4].x - p[8].x, p[4].y - p[8].y) / (hand.palm || 0.1);
+  return pinch < 0.38 && e.middle > 0.55 && e.ring > 0.55 && e.pinky > 0.5;
+}

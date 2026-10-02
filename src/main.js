@@ -8,6 +8,8 @@ import { startCamera, createHandTracker, CameraError, prefetchRecognition, stopP
 import { sfx, unlockAudio, setSound, isSoundOn, loadAudioManifest, audioGraph, voiceLog } from './audio.js';
 import { music } from './music.js';
 import { $, fillSealIcons } from './ui.js';
+import { backIcon } from './icons.js';
+import { isOkSign } from './fingers.js';
 import { app, video, arena, overlay, sensei, brightness, state, go, pct, SHORT } from './app/context.js';
 import { startStory } from './app/story.js';
 import { menu } from './screens/menu.js';
@@ -145,26 +147,27 @@ let detectGap = 0;
 let detectCost = 8;
 let lastStampMs = 1;
 
-// ---------- «Два кулака — в меню»: навигация только руками с любого экрана ----------
-const BACK_HOLD_MS = 1500;
+// ---------- «Окей» двумя руками — в меню: навигация только руками с любого экрана ----------
+// Жест нарочно непривычный: так руки случайно не держат, и он не совпадает ни с одной печатью.
+const BACK_HOLD_MS = 1200;
 const backCue = $('back-cue');
-const backFill = $('back-fill');
+const backRing = $('back-ring');
+$('back-icon').innerHTML = backIcon({ size: 38 });
 let backSince = 0;
-const isFist = (h) => h.ext.index < 0.35 && h.ext.middle < 0.35 && h.ext.ring < 0.35 && h.ext.pinky < 0.4;
 function updateBackGesture(now) {
   const screen = app.dataset.screen;
-  // в Кузнице во время записи и проверки руки заняты своим жестом (вдруг это и есть два кулака)
+  // в Кузнице во время записи и проверки руки заняты своим жестом (вдруг это и есть «окей» двумя руками)
   const busy = screen === 'forge' && forge.phase !== 'done';
   const allowed = !['intro', 'error', 'menu'].includes(screen) && !busy;
-  const fists = allowed && state.hands.length === 2 && state.hands.every(isFist);
-  backSince = fists ? backSince || now : 0;
+  const okBoth = allowed && state.hands.length === 2 && state.hands.every(isOkSign);
+  backSince = okBoth ? backSince || now : 0;
   const p = backSince ? Math.min(1, (now - backSince) / BACK_HOLD_MS) : 0;
   // подсказку видно всегда на спокойных экранах и только во время удержания — в бою и сценах
   const calm = ['dojo', 'results', 'forge', 'chapters'].includes(screen);
   backCue.hidden = !allowed || (!calm && !p);
   backCue.classList.toggle('active', p > 0);
   backCue.classList.toggle('dim', p === 0);
-  backFill.style.width = `${Math.round(p * 100)}%`;
+  backRing.style.strokeDashoffset = String(119.4 * (1 - p));
   if (p >= 1) {
     backSince = 0;
     sfx.success();

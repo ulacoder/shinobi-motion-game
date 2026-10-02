@@ -244,12 +244,14 @@ export const fight = {
     b.holdFoe(now + 6500);
     const box = $('steal');
     box.classList.remove('won');
-    box.querySelector('.steal-title').textContent = 'Кагэро украл твою печать!';
+    $('steal-hanko').textContent = '奪';
+    box.querySelector('.steal-title').textContent = 'Кагэро украл печать!';
     $('steal-sub').textContent = `Повтори «${this.forged.tech.name}» быстрее него — или поставь щит`;
     // форма печати — зеркально, как будто её складывает сам Кагэро
     const form = this.forged.seal.form ?? { hands: [] };
     const mirrored = { hands: (form.hands ?? []).map((h) => h.map((p) => ({ x: -p.x, y: p.y }))) };
-    drawHandForm($('steal-hands'), mirrored, { ink: '#ff4d3a', glow: 'rgba(255, 40, 30, 0.95)', tips: '#ffe1d6' });
+    // тушью, как формы печатей в цепочке, но с красным свечением Затмения
+    drawHandForm($('steal-hands'), mirrored, { glow: 'rgba(156, 34, 25, 0.95)' });
     box.hidden = false;
     sfx.roar();
     arena.label('奪!', '#ff4d3a');
@@ -262,6 +264,7 @@ export const fight = {
     this.stealDone = true;
     const box = $('steal');
     if (won) {
+      $('steal-hanko').textContent = '返';
       b.forgedAt = -Infinity; // перезарядка не мешает вернуть печать
       const tech = { ...this.forged.tech, damage: 30 };
       const events = [...b.onForged(tech, accuracy, now), ...b.stunFoe(2600, now)];

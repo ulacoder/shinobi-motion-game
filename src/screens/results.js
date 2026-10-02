@@ -7,7 +7,7 @@ import { music } from '../music.js';
 import { addRecord, getRecords } from '../storage.js';
 import { $, el, GestureChoice, renderRecords, formatTime, drawHandForm } from '../ui.js';
 import { arena, state, go, registerScreen, pct } from '../app/context.js';
-import { drawPalmReport, describeWorst } from '../palmreport.js';
+import { renderPalmReport, describeWorst } from '../palmreport.js';
 import { startStory, FIGHTS_TOTAL } from '../app/story.js';
 
 export const results = {
@@ -55,7 +55,7 @@ export const results = {
       gallery.append(item);
     }
     // Отчёт ладони: какие пальцы чаще всего подводили
-    drawPalmReport($('palm-report'), res.fingerMiss ?? {});
+    renderPalmReport($('palm-report'), res.fingerMiss ?? {});
     $('palm-worst').textContent = describeWorst(res.fingerMiss ?? {});
     $('palm-worst-m').textContent = describeWorst(res.fingerMiss ?? {});
     const ul = $('res-mistakes');
