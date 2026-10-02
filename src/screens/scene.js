@@ -7,7 +7,8 @@ import { sfx, playVoice, preloadVoices, hasVoice, stopVoice } from '../audio.js'
 import { music } from '../music.js';
 import { $, stamp } from '../ui.js';
 import { sealIcon } from '../icons.js';
-import { arena, sensei, state, registerScreen, setText, setWidth, pct, badFingers, reportFrameIssue } from '../app/context.js';
+import { wantsBySide } from '../ghost.js';
+import { arena, overlay, sensei, state, registerScreen, setText, setWidth, pct, badFingers, reportFrameIssue } from '../app/context.js';
 import { nextStep } from '../app/story.js';
 
 export const sceneLog = [];
@@ -69,6 +70,7 @@ export const scene = {
     this.line = null;
     this.wait = null;
     this.overlayBad = null;
+    this.overlayGuide = null;
     $('scene-gesture').hidden = true;
     $('title-card').hidden = true;
     document.querySelector('.bubble').removeEventListener('click', this.onClick);
@@ -181,6 +183,7 @@ Object.assign(scene, {
     const ev = evaluateSeal(w.seal, state.hands);
     this.overlayTone = ev.passed ? 'pass' : ev.accuracy >= NEAR_ACCURACY ? 'near' : 'idle';
     this.overlayBad = ev.passed ? null : badFingers(ev);
+    this.overlayGuide = !ev.passed && ev.accuracy >= NEAR_ACCURACY ? wantsBySide(ev) : null;
     if (ev.passed) {
       w.since ||= now;
       setWidth($('scene-gesture-fill'), pct(Math.min(1, (now - w.since) / 600)));
@@ -196,6 +199,8 @@ Object.assign(scene, {
     const w = this.wait;
     w.done = now;
     this.overlayBad = null;
+    this.overlayGuide = null;
+    overlay.burst(SEALS[w.seal].kanji, state.hands, '#6fd08c');
     stamp($('stamp'), SEALS[w.seal].kanji);
     sfx.seal();
     sfx.success();

@@ -1,6 +1,7 @@
 // Экран боя: печати → цепочки-техники, ультимейты (круг и «ладонь вверх-вниз»), удары врага, комбо.
 
-import { NEAR_ACCURACY } from '../seals.js';
+import { SEALS, NEAR_ACCURACY } from '../seals.js';
+import { wantsBySide } from '../ghost.js';
 import { SealDetector } from '../detector.js';
 import { CircleTracker, isPointing } from '../air.js';
 import { ChopDetector } from '../chop.js';
@@ -105,6 +106,7 @@ export const fight = {
           break;
         case 'cast': {
           const id = e.tech.id;
+          overlay.burst(e.tech.glyph, state.hands, '#ff8a3d');
           cutin(e.tech, e.forms ?? this.chainForms);
           this.chainForms = [];
           this.showCombo(e);
@@ -368,6 +370,7 @@ export const fight = {
 
     const issue = reportFrameIssue(now);
     this.overlayBad = null;
+    this.overlayGuide = null;
 
     // Ультимейт: одна рука, указательный палец рисует круг
     // Удар дракона: рубящий удар ладонью при полной чакре
@@ -409,9 +412,14 @@ export const fight = {
       const forgedNow = this.updateForged(now, best);
       this.overlayTone = best?.passed ? 'pass' : best && best.accuracy >= NEAR_ACCURACY ? 'near' : 'idle';
       if (best && !best.passed && best.accuracy >= NEAR_ACCURACY) this.overlayBad = badFingers(best);
+      // рука-призрак, если печать «почти» держится дольше секунды
+      const near = best && !best.passed && best.accuracy >= NEAR_ACCURACY && !forgedNow;
+      this.nearSince = near ? this.nearSince || now : 0;
+      this.overlayGuide = near && now - this.nearSince > 900 ? wantsBySide(best) : null;
       for (const e of res.events) {
         if (e.type === 'seal') {
           sfx.seal();
+          overlay.burst(SEALS[e.seal].kanji, state.hands);
           this.lastEval = e.evaluation;
           const form = snapshotHands(state.hands);
           this.chainForms.push(form);

@@ -6,13 +6,14 @@
 
 import { FINGERS, FINGER_NAMES, SIDE_NAMES } from '../geometry.js';
 import { SEALS, classify } from '../seals.js';
+import { wantsBySide } from '../ghost.js';
 import { FORGE_SAMPLES, FORGE_PASS, features, learnTemplate, evaluateTemplate, describeTemplate, nameForSeal } from '../forge.js';
 import { sfx } from '../audio.js';
 import { music } from '../music.js';
 import { saveForged } from '../storage.js';
 import { $, el, GestureChoice, stamp, snapshotHands, drawHandForm } from '../ui.js';
 import { startStory, nextStep } from '../app/story.js';
-import { arena, sensei, state, registerScreen, go, setText, setWidth, pct, badFingers, reportFrameIssue } from '../app/context.js';
+import { arena, overlay, sensei, state, registerScreen, go, setText, setWidth, pct, badFingers, reportFrameIssue } from '../app/context.js';
 
 const REPEATS = 3; // сколько раз повторить жест после записи
 const STABLE_MS = 450; // рука должна замереть, чтобы снимок был чётким
@@ -166,6 +167,7 @@ export const forge = {
     const issue = reportFrameIssue(now);
     const ev = evaluateTemplate(this.tpl, hands);
     this.overlayBad = ev.passed ? null : badFingers(ev);
+    this.overlayGuide = !ev.passed && ev.accuracy >= 0.4 && !ev.missingHands ? wantsBySide(ev) : null;
     this.overlayTone = ev.passed ? 'pass' : ev.accuracy >= 0.45 ? 'near' : 'idle';
     this.setMeter(ev.accuracy, ev.passed);
     if (now - this.lastRender > 140) {
@@ -199,6 +201,8 @@ export const forge = {
     this.count += 1;
     this.accs.push(acc);
     stamp($('stamp'), this.seal.kanji);
+    overlay.burst(this.seal.kanji, state.hands, '#6fd08c');
+    this.overlayGuide = null;
     sfx.seal();
     sfx.success();
     this.renderDots();
@@ -209,6 +213,7 @@ export const forge = {
   finish(now) {
     this.phase = 'done';
     this.overlayBad = null;
+    this.overlayGuide = null;
     const avg = this.accs.reduce((s, v) => s + v, 0) / this.accs.length;
     saveForged({ name: this.seal.name, kanji: this.seal.kanji, effect: this.seal.effect, tpl: this.tpl, form: this.seal.form, acc: avg, at: Date.now() });
     sfx.win();

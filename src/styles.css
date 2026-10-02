@@ -2822,9 +2822,8 @@ button {
 
 .back-cue {
   position: absolute;
-  left: 50%;
-  bottom: calc(var(--gutter) + 4px);
-  transform: translateX(-50%);
+  top: calc(var(--gutter) * 0.6 + 4px);
+  right: calc(var(--gutter) + 52px);
   z-index: 40;
   display: flex;
   align-items: center;
@@ -3134,4 +3133,13 @@ button {
 @keyframes steal-pulse {
   from { transform: scale(1) rotate(-1deg); }
   to { transform: scale(1.04) rotate(1deg); }
+}
+
+@media (max-width: 820px), (max-aspect-ratio: 1/1) {
+  .back-cue .back-text {
+    display: none;
+  }
+  .back-cue .back-bar {
+    width: 48px;
+  }
 }

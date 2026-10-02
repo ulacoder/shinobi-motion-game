@@ -1,5 +1,6 @@
 // Мелкие UI-компоненты: сенсей с подсказками, выбор жестом, отрисовка рук, списки.
 
+import { guideHand } from './ghost.js';
 import { HAND_CONNECTIONS } from './tracker.js';
 import { SEALS, evaluateSeal } from './seals.js';
 import { TECHNIQUES, ULTIMATE, DRAGON } from './battle.js';
@@ -168,9 +169,10 @@ export class Overlay {
    * hands — руки из buildHands; tone — цвет скелета;
    * bad — Set строк `${side}:${finger}` для подсветки неверных пальцев.
    */
-  draw(hands, { tone = 'idle', bad = null, aspect = 16 / 9, trail = null, now = 0 } = {}) {
+  draw(hands, { tone = 'idle', bad = null, aspect = 16 / 9, trail = null, now = 0, guide = null } = {}) {
     const hasGhost = this.ghost && now < this.ghost.until;
-    if (!hands.length && !(trail && trail.length) && !hasGhost) {
+    const fxLeft = (this.sparks?.length ?? 0) + (this.bursts?.length ?? 0);
+    if (!hands.length && !(trail && trail.length) && !hasGhost && !fxLeft) {
       // Нечего рисовать — не трогаем холст вовсе.
       if (!this.empty) {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -187,6 +189,11 @@ export class Overlay {
     const px = (p) => ({ x: (p.x / aspect) * w, y: p.y * h });
     const colors = { idle: '#58d0ff', near: '#f0b64a', pass: '#6fd08c' };
     const base = colors[tone] ?? colors.idle;
+    const dt = Math.min(50, now - (this.lastNow ?? now));
+    this.lastNow = now;
+
+    // Рука-призрак: правильная форма поверх живой руки, неверные пальцы «тянутся» к ней
+    if (guide && guide.size) this.drawGuide(hands, guide, px, k, now);
 
     for (const hand of hands) {
       const pts = hand.screen.map(px);
@@ -251,6 +258,164 @@ export class Overlay {
       ctx.globalAlpha = Math.max(0, (this.ghost.until - now) / 1200);
       drawPath(this.ghost.points, this.ghost.passed ? '#6fd08c' : '#ff5a48', 5);
       ctx.globalAlpha = 1;
+    }
+
+    // AR-эффекты: искры чакры с кончиков пальцев, огненный след круга, иероглиф над руками
+    this.spawnSparks(hands, trail, tone, now);
+    this.drawSparks(px, k, dt);
+    this.drawBursts(k, w, h, now);
+  }
+
+  /** Искры с кончиков пальцев: цвет — по состоянию (ищет / почти / засчитано). */
+  spawnSparks(hands, trail, tone, now) {
+    this.sparks ??= [];
+    const palette = { idle: [88, 208, 255], near: [240, 182, 74], pass: [111, 208, 140] };
+    const [r, g, b] = palette[tone] ?? palette.idle;
+    if (this.sparks.length < 160 && now - (this.sparkAt ?? 0) > 30) {
+      this.sparkAt = now;
+      for (const hand of hands) {
+        for (const i of [4, 8, 12, 16, 20]) {
+          if (Math.random() > 0.55) continue;
+          const p = hand.screen[i];
+          this.sparks.push({ x: p.x, y: p.y, vx: (Math.random() - 0.5) * 0.00012, vy: -0.00018 - Math.random() * 0.0002, life: 1, r, g, b, size: 1 });
+        }
+      }
+      // огонь вдоль следа круга
+      if (trail && trail.length > 1) {
+        const p = trail[trail.length - 1];
+        for (let j = 0; j < 3; j++) {
+          this.sparks.push({ x: p.x, y: p.y, vx: (Math.random() - 0.5) * 0.0003, vy: -0.0003 - Math.random() * 0.0003, life: 1, r: 255, g: 120 + Math.random() * 80, b: 40, size: 1.8 });
+        }
+      }
+    }
+  }
+
+  drawSparks(px, k, dt) {
+    const ctx = this.ctx;
+    if (!this.sparks?.length) return;
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    const alive = [];
+    for (const s of this.sparks) {
+      s.life -= dt / 650;
+      if (s.life <= 0) continue;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      alive.push(s);
+      const q = px(s);
+      const rad = (2 + 5 * s.life) * s.size * k;
+      const grad = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, rad);
+      grad.addColorStop(0, `rgba(${s.r},${s.g},${s.b},${0.9 * s.life})`);
+      grad.addColorStop(1, `rgba(${s.r},${s.g},${s.b},0)`);
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(q.x, q.y, rad, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    this.sparks = alive;
+    ctx.restore();
+  }
+
+  /** Иероглиф печати вспыхивает над руками и разлетается кольцом. */
+  burst(kanji, hands, color = '#f0b64a') {
+    this.bursts ??= [];
+    let x = 0.5;
+    let y = 0.45;
+    if (hands?.length) {
+      x = hands.reduce((s, h) => s + h.center.x / (h.aspect || 16 / 9), 0) / hands.length;
+      y = hands.reduce((s, h) => s + h.bbox.minY, 0) / hands.length - 0.06;
+    }
+    this.bursts.push({ kanji, x, y: Math.max(0.12, y), start: performance.now(), color });
+    if (this.bursts.length > 3) this.bursts.shift();
+  }
+
+  drawBursts(k, w, h, now) {
+    if (!this.bursts?.length) return;
+    const ctx = this.ctx;
+    const DUR = 1000;
+    this.bursts = this.bursts.filter((b) => now - b.start < DUR);
+    for (const b of this.bursts) {
+      const t = (now - b.start) / DUR;
+      const x = b.x * w;
+      const y = b.y * h;
+      ctx.save();
+      ctx.globalAlpha = 1 - t;
+      // ударная волна
+      ctx.strokeStyle = b.color;
+      ctx.lineWidth = 6 * k * (1 - t);
+      ctx.beginPath();
+      ctx.arc(x, y, (30 + 160 * t) * k, 0, Math.PI * 2);
+      ctx.stroke();
+      // иероглиф
+      const size = (56 + 50 * Math.sin(Math.min(1, t * 2) * Math.PI * 0.5)) * k;
+      ctx.font = `700 ${size}px 'Shippori Mincho B1', 'Noto Serif CJK JP', serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.lineWidth = 8 * k;
+      ctx.strokeStyle = 'rgba(20, 8, 12, 0.85)';
+      ctx.strokeText(b.kanji, x, y);
+      ctx.fillStyle = b.color;
+      ctx.shadowColor = b.color;
+      ctx.shadowBlur = 24 * k;
+      ctx.fillText(b.kanji, x, y);
+      ctx.restore();
+    }
+  }
+
+  /** Рука-призрак для каждой руки, у которой есть неверные пальцы. */
+  drawGuide(hands, guide, px, k, now) {
+    const ctx = this.ctx;
+    const pulse = 0.55 + 0.35 * Math.sin(now / 160);
+    for (const hand of hands) {
+      const wants = guide.get(hand.side);
+      if (!wants || !Object.keys(wants).length) continue;
+      const g = guideHand(hand.screen, wants).map(px);
+      const live = hand.screen.map(px);
+      ctx.save();
+      ctx.lineCap = 'round';
+      // весь призрак — полупрозрачный белый
+      ctx.globalAlpha = 0.35;
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 12 * k;
+      for (const [a, b] of HAND_CONNECTIONS) {
+        ctx.beginPath();
+        ctx.moveTo(g[a].x, g[a].y);
+        ctx.lineTo(g[b].x, g[b].y);
+        ctx.stroke();
+      }
+      // пальцы, которые надо исправить, — зелёные и пульсируют; стрелка от живого кончика к нужному
+      ctx.globalAlpha = pulse;
+      ctx.strokeStyle = '#6fd08c';
+      ctx.shadowColor = '#6fd08c';
+      ctx.shadowBlur = 14 * k;
+      for (const finger of Object.keys(wants)) {
+        const idx = FINGER_POINTS[finger];
+        ctx.lineWidth = 10 * k;
+        ctx.beginPath();
+        idx.forEach((i, j) => (j ? ctx.lineTo(g[i].x, g[i].y) : ctx.moveTo(g[i].x, g[i].y)));
+        ctx.stroke();
+        const from = live[idx[3]];
+        const to = g[idx[3]];
+        const len = Math.hypot(to.x - from.x, to.y - from.y);
+        if (len > 12 * k) {
+          ctx.lineWidth = 3 * k;
+          ctx.setLineDash([8 * k, 6 * k]);
+          ctx.beginPath();
+          ctx.moveTo(from.x, from.y);
+          ctx.lineTo(to.x, to.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          const ang = Math.atan2(to.y - from.y, to.x - from.x);
+          ctx.beginPath();
+          ctx.moveTo(to.x, to.y);
+          ctx.lineTo(to.x - 14 * k * Math.cos(ang - 0.5), to.y - 14 * k * Math.sin(ang - 0.5));
+          ctx.lineTo(to.x - 14 * k * Math.cos(ang + 0.5), to.y - 14 * k * Math.sin(ang + 0.5));
+          ctx.closePath();
+          ctx.fillStyle = '#6fd08c';
+          ctx.fill();
+        }
+      }
+      ctx.restore();
     }
   }
 

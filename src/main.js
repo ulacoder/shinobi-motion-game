@@ -211,6 +211,7 @@ function loop(now) {
   overlay.draw(state.hands, {
     tone: controller?.overlayTone ?? 'idle',
     bad: controller?.overlayBad ?? null,
+    guide: controller?.overlayGuide ?? null,
     aspect: state.aspect,
     trail,
     now,

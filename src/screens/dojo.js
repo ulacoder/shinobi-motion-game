@@ -5,6 +5,7 @@ import { SEALS, SEAL_ORDER, NEAR_ACCURACY } from '../seals.js';
 import { SealDetector } from '../detector.js';
 import { CircleTracker, isPointing } from '../air.js';
 import { ChopDetector, bladeScore } from '../chop.js';
+import { wantsBySide } from '../ghost.js';
 import { TECHNIQUES, EXTRA_TECHNIQUES, ULTIMATE } from '../battle.js';
 import { sealIcon, techIcon } from '../icons.js';
 import { sfx } from '../audio.js';
@@ -53,6 +54,7 @@ export const dojo = {
 
   startLesson() {
     const lesson = LESSONS[this.idx];
+    this.overlayGuide = null;
     this.detector.reset();
     this.circle.reset();
     this.chop.reset();
@@ -137,6 +139,8 @@ export const dojo = {
 
   succeed(glyph, accuracy, key, now) {
     stamp($('stamp'), glyph);
+    overlay.burst(glyph, state.hands, '#6fd08c');
+    this.overlayGuide = null;
     sfx.seal();
     sfx.success();
     updateSealBest(key, accuracy);
@@ -166,6 +170,7 @@ export const dojo = {
       const ev = res.evals[0];
       this.overlayTone = ev.passed ? 'pass' : ev.accuracy >= NEAR_ACCURACY ? 'near' : 'idle';
       this.overlayBad = badFingers(ev);
+      this.overlayGuide = !ev.passed && ev.accuracy >= NEAR_ACCURACY ? wantsBySide(ev) : null;
       this.setMeter(ev.smooth ?? ev.accuracy, ev.passed);
       if (now - this.lastRender > 120) {
         this.renderChecks(ev);
