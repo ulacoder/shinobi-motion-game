@@ -2,6 +2,7 @@
 // линии скорости, кадры удара, японские звуковые надписи, дым.
 
 import { drawCharacter } from './characters.js';
+import { drawHeroHands } from './herohands.js';
 
 const TAU = Math.PI * 2;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -44,6 +45,10 @@ export class Arena {
     this.place = 'night';
     this.enemy = null; // { look, tint, state, charge, phase2, dead, enter }
     this.shield = 0;
+    // руки героя (вид от первого лица): { hands: [[21 точка]], glow } — их ставит экран боя/сцены
+    this.heroHands = null;
+    this.heroAlpha = 0;
+    this.lastHeroHands = [];
     this.reduceMotion = matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
     // Качество подстраивается под мощность устройства: 2 — полное, 1 — среднее, 0 — экономное.
     this.quality = 2;
@@ -101,6 +106,11 @@ export class Arena {
   }
 
   get playerPos() {
+    // техники вылетают из рук героя, когда они на экране
+    if (this.heroAlpha > 0.5) {
+      const narrow = this.w < 820 || this.w < this.h;
+      return narrow ? { x: this.w * 0.5, y: this.h * 0.78 } : { x: this.w * 0.55, y: this.h * 0.78 };
+    }
     return { x: this.w * 0.22, y: this.h * 0.95 };
   }
 
@@ -452,6 +462,7 @@ export class Arena {
     if (this.enemy) this.drawEnemy(dt);
     if (this.chest) this.drawChest(dt);
     this.drawShield();
+    this.drawHero(dt);
     this.drawParticles(dt);
     this.drawBolts(dt);
     this.drawRings(dt);
@@ -478,6 +489,29 @@ export class Arena {
       ctx.restore();
       this.impactFrame -= dt;
     }
+  }
+
+  /** Руки героя повторяют пальцы игрока: появляются снизу, когда руки в кадре, и светятся при печати. */
+  drawHero(dt) {
+    const want = this.heroHands?.hands?.length ? 1 : 0;
+    if (want) this.lastHeroHands = this.heroHands.hands;
+    this.heroAlpha += (want - this.heroAlpha) * Math.min(1, dt * 8);
+    if (this.heroAlpha < 0.02 || !this.lastHeroHands.length) return;
+    const { w, h } = this;
+    const narrow = w < 820 || w < h;
+    // в бою — снизу, от первого лица; в сюжетной сцене — над манга-пузырём
+    const inScene = this.heroHands?.place === 'scene' || (!want && this.heroPlace === 'scene');
+    if (want) this.heroPlace = this.heroHands.place;
+    const box = inScene
+      ? narrow
+        ? { x: w * 0.2, y: h * 0.14, w: w * 0.6, h: h * 0.26 }
+        : { x: w * 0.3, y: h * 0.06, w: w * 0.4, h: h * 0.34 }
+      : narrow
+        ? { x: w * 0.15, y: h * 0.62, w: w * 0.7, h: h * 0.3 }
+        : { x: w * 0.36, y: h * 0.6, w: w * 0.38, h: h * 0.4 };
+    // при появлении руки «поднимаются» снизу
+    box.y += (1 - this.heroAlpha) * box.h * 0.5;
+    drawHeroHands(this.ctx, this.lastHeroHands, box, { glow: this.heroHands?.glow ?? null, alpha: this.heroAlpha });
   }
 
   /** Статичная часть фона (небо, горы, деревья, мост) рисуется один раз в отдельный холст. */

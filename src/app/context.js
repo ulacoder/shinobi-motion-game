@@ -5,6 +5,8 @@ import { BrightnessMeter, frameIssue } from '../quality.js';
 import { Arena } from '../fx.js';
 import { sfx } from '../audio.js';
 import { $, Sensei, Overlay } from '../ui.js';
+import { FrameRecorder } from '../replay.js';
+import { addMoment } from '../manga.js';
 
 export const app = $('app');
 export const video = $('video');
@@ -12,6 +14,13 @@ export const arena = new Arena($('arena'));
 export const overlay = new Overlay($('overlay'));
 export const sensei = new Sensei($('sensei'), $('sensei-text'));
 export const brightness = new BrightnessMeter();
+/** Последние секунды камеры и рук — для замедленного повтора и главы манги. */
+export const recorder = new FrameRecorder({ height: 270, max: 60 });
+
+/** Запомнить текущий кадр как момент для главы манги. */
+export function moment(opts) {
+  addMoment(state.run, recorder.still(), opts);
+}
 
 /** Общее состояние кадра и похода: его читают все экраны, пишет главный цикл (main.js) и сюжет (story.js). */
 export const state = {

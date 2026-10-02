@@ -11,6 +11,7 @@ import { FORGE_SAMPLES, FORGE_PASS, features, learnTemplate, evaluateTemplate, d
 import { sfx } from '../audio.js';
 import { music } from '../music.js';
 import { saveForged } from '../storage.js';
+import { isOkSign } from '../fingers.js';
 import { $, el, GestureChoice, stamp, snapshotHands, drawHandForm } from '../ui.js';
 import { startStory, nextStep } from '../app/story.js';
 import { arena, overlay, sensei, state, registerScreen, go, setText, setWidth, pct, badFingers, reportFrameIssue } from '../app/context.js';
@@ -68,7 +69,7 @@ export const forge = {
     $('forge-kicker').textContent = this.story ? 'Глава 3 · Кузница · шаг 1 из 2' : 'Кузница печатей · шаг 1 из 2';
     $('forge-name').textContent = 'Придумай свою печать';
     $('forge-how').textContent =
-      'Любой жест одной или двумя руками: «коза», «окей», сердечко из ладоней. Покажи его камере и замри — я сделаю 5 снимков и выведу для него правила.';
+      'Любой жест одной или двумя руками: «коза», «рожки», сердечко из ладоней. Покажи его камере и замри — я сделаю 5 снимков и выведу для него правила.';
     $('forge-label').textContent = 'рука неподвижна';
     $('forge-checks').replaceChildren();
     this.renderDots();
@@ -112,13 +113,22 @@ export const forge = {
     if (ready >= 1 && now - this.lastSampleAt > SAMPLE_GAP_MS) {
       this.lastSampleAt = now;
       // встроенная печать — в бою сработает она, а не своя: просим другой жест
+      // «окей» занят: двумя руками это жест «назад в меню», печать на нём мешала бы выходу
+      if (hands.some(isOkSign)) {
+        sfx.hint();
+        this.samples = [];
+        this.forms = [];
+        this.renderDots();
+        sensei.show('«Окей» занят — это жест «назад в меню». Придумай другой: «козу», сердечко, рожки', 'warn', now, { lock: 2500, ttl: 4000 });
+        return;
+      }
       const same = classify(hands)[0];
       if (same?.passed) {
         sfx.hint();
         this.samples = [];
         this.forms = [];
         this.renderDots();
-        sensei.show(`Это уже печать «${SEALS[same.seal].name}». Придумай другой жест — например «козу» или «окей»`, 'warn', now, { lock: 2500, ttl: 4000 });
+        sensei.show(`Это уже печать «${SEALS[same.seal].name}». Придумай другой жест — например «козу» или сердечко`, 'warn', now, { lock: 2500, ttl: 4000 });
         return;
       }
       // число рук поменялось посреди записи — начинаем снимки заново
@@ -215,7 +225,9 @@ export const forge = {
     this.overlayBad = null;
     this.overlayGuide = null;
     const avg = this.accs.reduce((s, v) => s + v, 0) / this.accs.length;
-    saveForged({ name: this.seal.name, kanji: this.seal.kanji, effect: this.seal.effect, tpl: this.tpl, form: this.seal.form, acc: avg, at: Date.now() });
+    const forged = { name: this.seal.name, kanji: this.seal.kanji, effect: this.seal.effect, tpl: this.tpl, form: this.seal.form, acc: avg, at: Date.now() };
+    saveForged(forged);
+    if (this.story && state.run) state.run.forged = forged; // в сюжете печать принадлежит этому походу
     sfx.win();
     $('forge-kicker').textContent = 'Печать выкована';
     $('forge-how').textContent = `${this.seal.name}: ${REPEATS} точных повтора, среднее совпадение ${pct(avg)}. Игра выучила твой жест по 5 снимкам — без нейросети, по углам суставов.`;

@@ -69,7 +69,7 @@
         <header class="menu-head">
           <h1 class="title title-sm">Путь печатей</h1>
           <p class="subtitle">Подпешки → пешки → Кагэро, владыка клана Затмения</p>
-          <p class="lead">Покажи жест и держи секунду, чтобы выбрать. Можно и мышкой или клавишами 1–4.</p>
+          <p class="lead">Покажи жест и держи секунду, чтобы выбрать. Можно и мышкой или клавишами 1–5.</p>
         </header>
         <div class="choices">
           <button class="choice" data-choice="snake" type="button">
@@ -84,7 +84,7 @@
             <span class="choice-icon" data-seal="tiger"></span>
             <span class="choice-text">
               <strong>Сюжет · выбор главы</strong>
-              <span>Тигр: обе руки, указательный и средний вверх</span>
+              <span>Тигр: указательный и средний вверх</span>
             </span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
@@ -92,7 +92,7 @@
             <span class="choice-icon" data-seal="bird"></span>
             <span class="choice-text">
               <strong>Быстрое демо · 2 мин</strong>
-              <span>Сундук и бой с боссом. Птица: большой палец и мизинец в стороны</span>
+              <span>Сундук и босс. Птица: большой и мизинец в стороны</span>
             </span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
@@ -100,7 +100,15 @@
             <span class="choice-icon" data-seal="dog"></span>
             <span class="choice-text">
               <strong>Кузница печатей <span class="hanko hanko-sm new-hanko" title="Новое">新</span></strong>
-              <span>Придумай свой жест — игра выучит его. Собака: кулак + указательный вверх</span>
+              <span>Свой жест — игра его выучит. Собака</span>
+            </span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+          </button>
+          <button class="choice choice-new" data-choice="dragon" type="button">
+            <span class="choice-icon" data-seal="dragon"></span>
+            <span class="choice-text">
+              <strong>Свиток пути <span class="hanko hanko-sm new-hanko" title="Новое">道</span></strong>
+              <span>Что нового к финалу. Дракон</span>
             </span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
@@ -221,6 +229,14 @@
           <canvas id="steal-hands" width="420" height="300"></canvas>
           <p id="steal-sub" class="steal-sub">Повтори её быстрее него</p>
           <div class="bubble-timer steal-bar"><div id="steal-fill"></div></div>
+        </div>
+        <div id="replay" class="replay" hidden aria-live="polite">
+          <p class="replay-kicker">Повтор · замедленно</p>
+          <div class="replay-frame">
+            <canvas id="replay-canvas" width="720" height="405"></canvas>
+            <span id="replay-hanko" class="hanko hanko-lg replay-hanko">寅</span>
+          </div>
+          <p class="replay-title"><b id="replay-name">Огненный шар</b><span id="replay-acc">Тигр — 94%</span></p>
         </div>
         <div class="hud-top">
           <div class="fighter fighter-hero">
@@ -347,6 +363,63 @@
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
         </div>
+      </section>
+
+      <!-- Свиток пути: отбор → финал -->
+      <section id="screen-path" class="screen">
+        <article class="scroll path-scroll">
+          <header class="path-head">
+            <span class="hanko hanko-lg">道</span>
+            <div>
+              <p class="kicker">Отбор · 95 из 100 → Финал</p>
+              <h2>Свиток пути</h2>
+            </div>
+          </header>
+          <h3 class="path-sub">Жюри отбора сказало — мы исправили</h3>
+          <ol id="path-fixes" class="path-fixes"></ol>
+          <h3 class="path-sub">Новое к финалу</h3>
+          <ul id="path-new" class="path-new"></ul>
+          <div class="choices choices-row path-choices">
+            <button class="choice" data-choice="snake" type="button">
+              <span class="choice-icon" data-seal="snake"></span>
+              <span class="choice-text"><strong>В меню</strong><span>Раскрой обе ладони</span></span>
+              <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+            </button>
+            <button class="choice" data-choice="bird" type="button">
+              <span class="choice-icon" data-seal="bird"></span>
+              <span class="choice-text"><strong>Показать в деле</strong><span>Быстрое демо. Покажи Птицу</span></span>
+              <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+            </button>
+          </div>
+        </article>
+      </section>
+
+      <!-- 6б. Твоя глава манги: страница из стоп-кадров боя -->
+      <section id="screen-manga" class="screen">
+        <figure class="manga-page"><canvas id="manga-canvas" width="1240" height="1754" aria-label="Страница манги из твоего боя"></canvas></figure>
+        <aside class="scroll manga-side">
+          <div class="lesson-head">
+            <span class="hanko hanko-lg">漫</span>
+            <div>
+              <p class="kicker">Конец главы</p>
+              <h2>Твоя глава манги</h2>
+            </div>
+          </div>
+          <p class="lesson-how">Игра сама собрала страницу из лучших моментов боя: кадры с камеры, твои руки тушью, звуки ударов и реплики.</p>
+          <p id="manga-saved" class="manga-saved" hidden></p>
+          <div class="choices">
+            <button class="choice" data-choice="bird" type="button">
+              <span class="choice-icon" data-seal="bird"></span>
+              <span class="choice-text"><strong>Сохранить страницу</strong><span>PNG-картинка. Покажи Птицу</span></span>
+              <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+            </button>
+            <button class="choice" data-choice="snake" type="button">
+              <span class="choice-icon" data-seal="snake"></span>
+              <span class="choice-text"><strong>К итогам</strong><span>Очки и отчёт ладони. Раскрой обе ладони</span></span>
+              <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+            </button>
+          </div>
+        </aside>
       </section>
 
       <!-- Сенсей: подсказки режима ошибки -->

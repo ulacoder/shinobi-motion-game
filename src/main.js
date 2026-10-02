@@ -10,7 +10,8 @@ import { music } from './music.js';
 import { $, fillSealIcons } from './ui.js';
 import { backIcon } from './icons.js';
 import { isOkSign } from './fingers.js';
-import { app, video, arena, overlay, sensei, brightness, state, go, pct, SHORT } from './app/context.js';
+import { app, video, arena, overlay, sensei, brightness, state, go, pct, SHORT, recorder } from './app/context.js';
+import { HandSmoother } from './herohands.js';
 import { startStory } from './app/story.js';
 import { menu } from './screens/menu.js';
 import { dojo } from './screens/dojo.js';
@@ -20,6 +21,8 @@ import { results } from './screens/results.js';
 import { chest } from './screens/chest.js';
 import { forge, forgeDebug } from './screens/forge.js';
 import { chapters } from './screens/chapters.js';
+import { mangaScreen } from './screens/manga.js';
+import { path } from './screens/path.js';
 
 fillSealIcons();
 
@@ -104,7 +107,7 @@ addEventListener('keydown', (e) => {
     forge.restart();
   } else if (screen === 'chapters' && /^[1-3]$/.test(e.key)) {
     chapters.pick(Number(e.key));
-  } else if ((screen === 'menu' || screen === 'results') && /^[1-4]$/.test(e.key)) {
+  } else if ((screen === 'menu' || screen === 'results' || screen === 'manga' || screen === 'path') && /^[1-5]$/.test(e.key)) {
     const buttons = [...$(`screen-${screen}`).querySelectorAll('[data-choice]')];
     buttons[Number(e.key) - 1]?.click();
   } else if (screen === 'chest' && (e.key === ' ' || e.key === 'Enter')) {
@@ -113,6 +116,9 @@ addEventListener('keydown', (e) => {
   } else if (screen === 'scene' && (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight')) {
     e.preventDefault();
     scene.skip(performance.now());
+  } else if (screen === 'battle' && (e.key === ' ' || e.key === 'Enter')) {
+    e.preventDefault();
+    fight.skipReplay();
   }
 });
 
@@ -175,6 +181,9 @@ function updateBackGesture(now) {
   }
 }
 
+let recordedStamp = -1;
+const heroSmoother = new HandSmoother();
+
 function loop(now) {
   const dt = Math.min(0.05, (now - prev) / 1000);
   frameAvg = frameAvg * 0.95 + (now - prev) * 0.05;
@@ -206,9 +215,26 @@ function loop(now) {
     state.lastBright = brightness.sample(video, now);
   }
 
+  // кадры камеры для замедленного повтора и главы манги — только в бою и в сюжетных жестах
+  const rec = state.controller?.records || (state.controller === scene && scene.wait);
+  if (rec && state.handsStamp !== recordedStamp) {
+    recordedStamp = state.handsStamp;
+    recorder.push(video, state.hands, state.aspect, now);
+  }
+
   updateBackGesture(now);
   const controller = state.controller;
   if (controller) controller.update(now, dt);
+
+  // герой повторяет пальцы игрока: руки на арене в бою и в сюжетных жестах
+  const heroOn = (controller === fight && fight.battle && !fight.endAt) || (controller === scene && scene.wait && !scene.wait.done);
+  arena.heroHands = heroOn
+    ? {
+        hands: heroSmoother.update(state.hands),
+        glow: controller.overlayTone === 'pass' ? 'rgba(240, 182, 74, 0.95)' : null,
+        place: controller === scene ? 'scene' : 'battle',
+      }
+    : null;
 
   const trail = controller === fight || controller === dojo ? controller.circle?.points : null;
   overlay.draw(state.hands, {

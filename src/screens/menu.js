@@ -14,6 +14,7 @@ export const menu = {
       tiger: () => go('chapters'),
       bird: () => startStory({ quick: true }),
       dog: () => go('forge'),
+      dragon: () => go('path'),
     });
     this.choice.reset();
     sensei.clear();

@@ -8,7 +8,7 @@ import { music } from '../music.js';
 import { $, stamp } from '../ui.js';
 import { sealIcon } from '../icons.js';
 import { wantsBySide } from '../ghost.js';
-import { arena, overlay, sensei, state, registerScreen, setText, setWidth, pct, badFingers, reportFrameIssue } from '../app/context.js';
+import { arena, overlay, sensei, state, registerScreen, setText, setWidth, pct, badFingers, reportFrameIssue, moment } from '../app/context.js';
 import { nextStep } from '../app/story.js';
 
 export const sceneLog = [];
@@ -210,6 +210,20 @@ Object.assign(scene, {
     if (fx === 'shield') (arena.shieldUp(), sfx.shield());
     if (fx === 'fire') (arena.label('火!', '#f0b64a'), sfx.fire());
     if (fx === 'ready') arena.label('準備!', '#6fd08c');
+    if (fx === 'friend') {
+      arena.label('友!', '#f0b64a');
+      overlay.burst('友', state.hands, '#f0b64a');
+      sfx.win();
+    }
+    // момент для главы манги
+    moment({
+      who: 'Улагат',
+      caption: fx === 'friend' ? 'Печать дружбы — вместе!' : `${SEALS[w.seal].name}!`,
+      sfx: fx === 'friend' ? 'ギュッ!' : fx === 'fire' ? 'ゴォッ!' : fx === 'shield' ? 'キィン!' : 'パッ!',
+      kanji: SEALS[w.seal].kanji,
+      priority: fx === 'friend' ? 4 : 1,
+      once: `g-${w.seal}`,
+    });
     sensei.show(`Отлично! ${SEALS[w.seal].name}: совпадение ${pct(accuracy)}`, 'good', now, { lock: 1100 });
   },
 });

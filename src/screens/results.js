@@ -4,7 +4,7 @@ import { SEALS } from '../seals.js';
 import { STAGE_NAMES } from '../battle.js';
 import { sfx } from '../audio.js';
 import { music } from '../music.js';
-import { addRecord, getRecords } from '../storage.js';
+import { getRecords } from '../storage.js';
 import { $, el, GestureChoice, renderRecords, formatTime, drawHandForm } from '../ui.js';
 import { arena, state, go, registerScreen, pct } from '../app/context.js';
 import { renderPalmReport, describeWorst } from '../palmreport.js';
@@ -12,7 +12,7 @@ import { startStory, FIGHTS_TOTAL } from '../app/story.js';
 
 export const results = {
   enter(res) {
-    const { id } = addRecord({ name: res.name, score: res.score, win: res.win, time: Math.round(res.time), acc: res.avgAcc, stage: res.stage });
+    const id = res.recordId;
     $('res-kicker').textContent = res.reason;
     $('res-title').textContent = res.win ? 'Победа' : 'Поражение';
     $('res-score').textContent = String(res.score);

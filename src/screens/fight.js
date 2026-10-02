@@ -9,14 +9,17 @@ import { Battle, TECHNIQUES, EXTRA_TECHNIQUES, ENEMIES, STAGE_NAMES, PLAYER_MAX_
 import { drawPortrait } from '../characters.js';
 import { sfx, playVoice } from '../audio.js';
 import { music } from '../music.js';
-import { $, el, renderTechList, renderChain, snapshotHands, snapshotPath, drawHandForm } from '../ui.js';
+import { $, el, renderTechList, renderChain, snapshotHands, snapshotPath } from '../ui.js';
 import {
-  arena, overlay, sensei, state, registerScreen, setText, setWidth, pct, camSeal, showCamSeal, badFingers, reportFrameIssue,
+  arena, overlay, sensei, state, registerScreen, setText, setWidth, pct, camSeal, showCamSeal, badFingers, reportFrameIssue, recorder, moment,
 } from '../app/context.js';
+import { killcam, REPLAY_MS } from './killcam.js';
+import { stolen } from './stolen.js';
 import { nextStep, finishRun } from '../app/story.js';
 import { cutin } from './cutin.js';
-import { evaluateTemplate, forgedTechnique } from '../forge.js';
+import { forgedTechnique } from '../forge.js';
 import { getForged } from '../storage.js';
+
 
 export const fight = {
   detector: new SealDetector(),
@@ -33,12 +36,23 @@ export const fight = {
   enter(step) {
     this.step = step;
     // Своя печать из Кузницы (последняя выкованная) — техника в любом бою
-    const seal = getForged()[0];
+    // В сюжете с Кузницей — только печать, выкованная в этом походе (у каждого игрока своя);
+    // в быстром демо — последняя печать этой вкладки.
+    const ownForge = state.run?.story.some((s) => s.type === 'forge');
+    const seal = ownForge ? state.run.forged : getForged()[0];
     this.forged = seal?.tpl ? { seal, tech: forgedTechnique(seal) } : null;
     this.forgedArmed = true;
     this.forgedSince = 0;
     this.steal = null;
     this.stealDone = false;
+    this.records = true; // главный цикл пишет кадры камеры для повтора и манги
+    recorder.clear();
+    recorder.release(this.clip);
+    this.clip = null;
+    this.replay = null;
+    this.replayAt = 0;
+    this.lastSealEv = null;
+    $('replay').hidden = true;
     this.phase2At = 0;
     $('steal').hidden = true;
     // в быстром демо у Кагэро меньше здоровья, чтобы бой укладывался в минуту-полторы
@@ -93,6 +107,11 @@ export const fight = {
   exit() {
     $('countdown').hidden = true;
     $('steal').hidden = true;
+    $('replay').hidden = true;
+    recorder.release(this.clip);
+    this.clip = null;
+    this.replay = null;
+    arena.heroHands = null;
   },
 
   handle(events, now) {
@@ -108,6 +127,8 @@ export const fight = {
           const id = e.tech.id;
           overlay.burst(e.tech.glyph, state.hands, '#ff8a3d');
           cutin(e.tech, e.forms ?? this.chainForms);
+          this.keepClip(e, now);
+          this.castMoment(e);
           this.chainForms = [];
           this.showCombo(e);
           if (id === 'fire') (arena.fireball(e.power), sfx.fire());
@@ -154,10 +175,12 @@ export const fight = {
           arena.playerHit(e.blocked);
           if (e.blocked) {
             sfx.blocked();
+            moment({ caption: 'Щит выдержал!', sfx: 'キィン!', priority: 2, once: 'block' });
             sensei.show('Щит выдержал удар!', 'good', now, { lock: 1000 });
           } else {
             sfx.hurt();
             playVoice('hero_hurt');
+            moment({ caption: 'Ай! Пропустил удар…', sfx: 'ドン!', priority: 1, once: 'hurt' });
             const hint = 'Удар пропущен: когда под врагом растёт красная полоса, ставь щит (Собака → Дракон)';
             b.noteMistake(hint, now);
             sensei.show(hint, 'warn', now, { lock: 1800, ttl: 3500 });
@@ -187,7 +210,13 @@ export const fight = {
           state.run.playerHp = b.playerHp;
           state.run.chakra = b.chakra;
           sensei.show(`${this.enemy.name} повержен!`, 'good', now, { lock: 2000, ttl: 2400 });
+          moment({ caption: `${this.enemy.name} повержен!`, sfx: 'ドーン!', priority: this.enemy.boss ? 5 : 3, kanji: this.clipInfo?.glyph ?? '勝' });
           this.endAt = now + 2300;
+          // замедленный повтор добивающей печати
+          if (this.clip) {
+            this.replayAt = now + 650;
+            this.endAt = now + 650 + REPLAY_MS + 700;
+          }
           this.endAction = () => nextStep();
           break;
         case 'player-down':
@@ -199,93 +228,6 @@ export const fight = {
           break;
       }
     }
-  },
-
-  /**
-   * Своя печать: если жест совпал с эталоном из Кузницы (и это не встроенная печать) и держится 0,4 с — техника.
-   * Повтор — только после того, как жест «отпустили». Возвращает true, пока жест совпадает (тогда молчат подсказки печатей).
-   */
-  updateForged(now, best) {
-    if (!this.forged) return false;
-    const ev = evaluateTemplate(this.forged.seal.tpl, state.hands);
-    const match = ev.passed && !best?.passed;
-    if (!match) {
-      this.forgedSince = 0;
-      if (ev.accuracy < 0.55) this.forgedArmed = true;
-      return false;
-    }
-    this.overlayTone = 'pass';
-    camSeal.hidden = true;
-    if (!this.forgedArmed) return true;
-    if (!this.forgedSince) this.forgedSince = now;
-    if (now - this.forgedSince < 400) return true;
-    this.forgedArmed = false;
-    this.forgedSince = 0;
-    if (this.steal) {
-      this.resolveSteal(true, ev.accuracy, now);
-      return true;
-    }
-    const events = this.battle.onForged(this.forged.tech, ev.accuracy, now);
-    if (!events.length) {
-      sensei.show(`${this.forged.tech.name} перезаряжается — через пару секунд`, 'info', now, { lock: 900 });
-      return true;
-    }
-    sfx.seal();
-    const form = snapshotHands(state.hands);
-    for (const e of events) if (e.type === 'cast') e.forms = [form];
-    this.handle(events, now);
-    return true;
-  },
-
-  /** Кагэро показывает украденную печать красными руками: у игрока 5 секунд, чтобы повторить её первым. */
-  startSteal(now) {
-    const b = this.battle;
-    this.steal = { start: now, until: now + 5000 };
-    b.holdFoe(now + 6500);
-    const box = $('steal');
-    box.classList.remove('won');
-    $('steal-hanko').textContent = '奪';
-    box.querySelector('.steal-title').textContent = 'Кагэро украл печать!';
-    $('steal-sub').textContent = `Повтори «${this.forged.tech.name}» быстрее него — или поставь щит`;
-    // форма печати — зеркально, как будто её складывает сам Кагэро
-    const form = this.forged.seal.form ?? { hands: [] };
-    const mirrored = { hands: (form.hands ?? []).map((h) => h.map((p) => ({ x: -p.x, y: p.y }))) };
-    // тушью, как формы печатей в цепочке, но с красным свечением Затмения
-    drawHandForm($('steal-hands'), mirrored, { glow: 'rgba(156, 34, 25, 0.95)' });
-    box.hidden = false;
-    sfx.roar();
-    arena.label('奪!', '#ff4d3a');
-    sensei.show('Кагэро: «Твоя печать теперь моя!» Повтори её первым!', 'warn', now, { lock: 2500, ttl: 5000 });
-  },
-
-  resolveSteal(won, accuracy, now) {
-    const b = this.battle;
-    this.steal = null;
-    this.stealDone = true;
-    const box = $('steal');
-    if (won) {
-      $('steal-hanko').textContent = '返';
-      b.forgedAt = -Infinity; // перезарядка не мешает вернуть печать
-      const tech = { ...this.forged.tech, damage: 30 };
-      const events = [...b.onForged(tech, accuracy, now), ...b.stunFoe(2600, now)];
-      const form = snapshotHands(state.hands);
-      for (const e of events) if (e.type === 'cast') e.forms = [form];
-      box.classList.add('won');
-      box.querySelector('.steal-title').textContent = 'Печать возвращена!';
-      $('steal-sub').textContent = 'Кагэро оглушён своей же жадностью';
-      arena.label('返!', '#6fd08c');
-      this.handle(events, now);
-      sensei.show('Печать возвращена! Кагэро оглушён — бей!', 'good', now, { lock: 2000, ttl: 3000 });
-    } else {
-      const events = b.stolenHit(22, now);
-      box.querySelector('.steal-title').textContent = 'Украдено!';
-      $('steal-sub').textContent = 'Кагэро ударил твоей же печатью';
-      const hint = 'Кагэро украл печать: повтори её сразу, как только увидишь красные руки';
-      b.noteMistake(hint, now);
-      this.handle(events, now);
-      sensei.show(hint, 'warn', now, { lock: 2200, ttl: 3500 });
-    }
-    setTimeout(() => (box.hidden = true), 1400);
   },
 
   /** Счётчик комбо в аниме-стиле. */
@@ -362,6 +304,11 @@ export const fight = {
 
     if (this.endAt) {
       if (b.result?.win && arena.enemy) arena.enemy.dead = Math.min(1, arena.enemy.dead + 0.03);
+      if (this.replayAt && now >= this.replayAt) {
+        this.replayAt = 0;
+        this.startReplay(now);
+      }
+      if (this.replay) this.updateReplay(now);
       if (now >= this.endAt) {
         const act = this.endAction;
         this.endAt = 0;
@@ -424,6 +371,7 @@ export const fight = {
           sfx.seal();
           overlay.burst(SEALS[e.seal].kanji, state.hands);
           this.lastEval = e.evaluation;
+          this.lastSealEv = { seal: e.seal, acc: e.accuracy, at: now };
           const form = snapshotHands(state.hands);
           this.chainForms.push(form);
           const best = state.run.bestForms[e.seal];
@@ -488,5 +436,11 @@ export const fight = {
     this.hud();
   },
 };
+
+$('replay').addEventListener('click', () => fight.skipReplay());
+
+// Повтор добивающей печати и моменты манги — src/screens/killcam.js;
+// своя печать из Кузницы и кража печати Кагэро — src/screens/stolen.js.
+Object.assign(fight, killcam, stolen);
 
 registerScreen('battle', fight);

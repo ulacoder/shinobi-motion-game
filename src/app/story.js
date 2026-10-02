@@ -1,7 +1,7 @@
 // Сюжетный поход: шаги сюжета по порядку (сцены, бои, сундуки) и подсчёт итогов.
 
 import { STORY, PLAYER_MAX_HP, emptyStats, scoreRun, topMistakes } from '../battle.js';
-import { randomNinjaName } from '../storage.js';
+import { randomNinjaName, addRecord } from '../storage.js';
 import { state, go } from './context.js';
 
 export const FIGHTS_TOTAL = STORY.filter((s) => s.type === 'fight').length;
@@ -64,7 +64,7 @@ export function finishRun(win, reason) {
   const { score, avgAcc } = scoreRun({ win, stats: state.run.stats, playerHp: state.run.playerHp, timeSec });
   const { story } = state.run;
   const step = story[Math.min(state.run.step, story.length - 1)];
-  go('results', {
+  const res = {
     win,
     reason,
     score,
@@ -78,5 +78,11 @@ export function finishRun(win, reason) {
     bestForms: state.run.bestForms,
     quick: state.run.quick,
     chapter: state.run.chapter,
-  });
+    moments: state.run.moments ?? [],
+  };
+  // рекорд сохраняем сразу: игрок может уйти в меню прямо со страницы манги
+  const { id } = addRecord({ name: res.name, score, win, time: Math.round(timeSec), acc: avgAcc, stage: res.stage });
+  res.recordId = id;
+  // глава манги — если в бою набралось хотя бы два ярких момента
+  go(res.moments.length >= 2 ? 'manga' : 'results', res);
 }

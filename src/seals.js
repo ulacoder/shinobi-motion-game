@@ -71,6 +71,19 @@ export const SEALS = {
     ],
     relations: [{ type: 'above', upper: 1, lower: 0 }],
   },
+  // Сюжетная печать финала (в бою не распознаётся): двое игроков дают по руке и сцепляют мизинцы —
+  // японская клятва «юбикири».
+  friend: {
+    id: 'friend',
+    name: 'Печать дружбы',
+    kanji: '友',
+    how: 'Двое: каждый даёт одну руку — пальцы согнуты, мизинец вверх. Сцепите мизинцы.',
+    roles: [
+      { label: 'мизинец', fingers: { thumb: null, index: DOWN, middle: DOWN, ring: DOWN, pinky: UP } },
+      { label: 'мизинец', fingers: { thumb: null, index: DOWN, middle: DOWN, ring: DOWN, pinky: UP } },
+    ],
+    relations: [{ type: 'pinkies', max: 1.1 }],
+  },
 };
 
 export const SEAL_ORDER = ['tiger', 'snake', 'bird', 'dog', 'dragon'];
@@ -149,6 +162,14 @@ function relationRule(rel, hands) {
     const dy = (lower.center.y - upper.center.y) / palm; // >0 значит верхняя рука выше
     const score = clamp01((dy + 0.2) / 0.9);
     return { kind: 'relation', label: 'ладонь над кулаком', score, hint: 'Подними раскрытую ладонь над кулаком', weight: 1.5 };
+  }
+  if (rel.type === 'pinkies') {
+    const a = hands[0];
+    const b = hands[1];
+    const palm = (a.palm + b.palm) / 2 || 1;
+    const d = dist(a.screen[20], b.screen[20]) / palm;
+    const score = clamp01(1 - (d - rel.max) / (rel.max * 1.5));
+    return { kind: 'relation', label: 'мизинцы сцеплены', score, hint: 'Сцепите мизинцы: кончики должны встретиться', weight: 1.5 };
   }
   return { kind: 'relation', label: '', score: 1, hint: '', weight: 0 };
 }
