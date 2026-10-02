@@ -109,7 +109,7 @@ export class Arena {
     // техники вылетают из рук героя, когда они на экране
     if (this.heroAlpha > 0.5) {
       const narrow = this.w < 820 || this.w < this.h;
-      return narrow ? { x: this.w * 0.5, y: this.h * 0.78 } : { x: this.w * 0.55, y: this.h * 0.78 };
+      return narrow ? { x: this.w * 0.5, y: this.h * 0.78 } : { x: this.w * 0.6, y: this.h * 0.78 };
     }
     return { x: this.w * 0.22, y: this.h * 0.95 };
   }
@@ -508,7 +508,7 @@ export class Arena {
         : { x: w * 0.3, y: h * 0.06, w: w * 0.4, h: h * 0.34 }
       : narrow
         ? { x: w * 0.15, y: h * 0.62, w: w * 0.7, h: h * 0.3 }
-        : { x: w * 0.36, y: h * 0.6, w: w * 0.38, h: h * 0.4 };
+        : { x: w * 0.42, y: h * 0.6, w: w * 0.36, h: h * 0.4 };
     // при появлении руки «поднимаются» снизу
     box.y += (1 - this.heroAlpha) * box.h * 0.5;
     drawHeroHands(this.ctx, this.lastHeroHands, box, { glow: this.heroHands?.glow ?? null, alpha: this.heroAlpha });
