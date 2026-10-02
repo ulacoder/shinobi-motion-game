@@ -99,6 +99,12 @@ export function backIcon({ size = 64 } = {}) {
   return svgWrap(hand(rest, 28, 58, { ok: true }) + hand(rest, 72, 58, { mirror: true, ok: true }), { size, label: 'Обе руки: знак «окей»' });
 }
 
+/** «Окей» одной рукой: кольцо из большого и указательного, три пальца вверх. */
+export function okOneIcon({ size = 64 } = {}) {
+  const rest = { middle: 'up', ring: 'up', pinky: 'up' };
+  return svgWrap(hand(rest, 50, 58, { ok: true }), { size, label: 'Одна рука: знак «окей»' });
+}
+
 /** Отчёт ладони: две раскрытые руки, каждый палец окрашен своим цветом; числа — над пальцами. */
 export function palmsIcon(fillsLeft, fillsRight, labels = { left: {}, right: {} }) {
   const open = { thumb: 'up', index: 'up', middle: 'up', ring: 'up', pinky: 'up' };

@@ -3468,3 +3468,65 @@ button {
 .scene-coop.together .coop-note {
   color: #2f7a46;
 }
+
+/* свитки с прокруткой: деревянные валики выходят за край — без полос прокрутки (колесо и тачпад работают) */
+.lesson,
+.path-scroll,
+#screen-results .results {
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.lesson::-webkit-scrollbar,
+.path-scroll::-webkit-scrollbar,
+#screen-results .results::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- подсказки-жесты внизу Кузницы и додзё: «окей» одной рукой / двумя ---------- */
+
+.hand-cue {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 50px 6px 6px;
+  border: 0;
+  border-radius: 10px;
+  background: rgba(31, 34, 80, 0.85);
+  box-shadow: 0 0 0 1px rgba(243, 238, 226, 0.12) inset;
+  color: var(--paper);
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+.hand-cue:hover {
+  background: rgba(43, 47, 106, 0.95);
+}
+
+.hand-cue.active {
+  background: rgba(43, 47, 106, 1);
+  box-shadow: 0 0 0 2px var(--chakra) inset;
+}
+
+.hand-cue-text {
+  display: grid;
+}
+
+.hand-cue-text b {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.hand-cue-text span {
+  color: var(--text-dim);
+  font-size: 0.8rem;
+}
+
+.hand-cue .ring {
+  right: 8px;
+  width: 32px;
+  height: 32px;
+}

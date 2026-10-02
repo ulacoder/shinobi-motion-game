@@ -8,7 +8,7 @@ import { startCamera, createHandTracker, CameraError, prefetchRecognition, stopP
 import { sfx, unlockAudio, setSound, isSoundOn, loadAudioManifest, audioGraph, voiceLog } from './audio.js';
 import { music } from './music.js';
 import { $, fillSealIcons } from './ui.js';
-import { backIcon } from './icons.js';
+import { backIcon, okOneIcon } from './icons.js';
 import { isOkSign } from './fingers.js';
 import { app, video, arena, overlay, sensei, brightness, state, go, pct, SHORT, recorder } from './app/context.js';
 import { HandSmoother } from './herohands.js';
@@ -160,20 +160,49 @@ const backCue = $('back-cue');
 const backRing = $('back-ring');
 $('back-icon').innerHTML = backIcon({ size: 38 });
 let backSince = 0;
+let oneSince = 0;
+let oneArmed = false;
+for (const icon of document.querySelectorAll('[data-cue-icon]')) icon.innerHTML = icon.dataset.cueIcon === 'one' ? okOneIcon({ size: 38 }) : backIcon({ size: 38 });
+// экраны, где внизу свои подсказки-жесты: «окей» одной рукой — действие экрана, двумя — в меню
+const CUE_SCREENS = ['forge', 'dojo'];
+
+function paintCue(screen, cue, p) {
+  const btn = document.querySelector(`#screen-${screen} [data-cue="${cue}"]`);
+  if (!btn) return;
+  btn.classList.toggle('active', p > 0);
+  btn.querySelector('.ring circle').style.strokeDashoffset = String(119.4 * (1 - p));
+}
+
 function updateBackGesture(now) {
   const screen = app.dataset.screen;
-  // в Кузнице во время записи и проверки руки заняты своим жестом (вдруг это и есть «окей» двумя руками)
-  const busy = screen === 'forge' && forge.phase !== 'done';
-  const allowed = !['intro', 'error', 'menu'].includes(screen) && !busy;
+  // «окей» нельзя выковать в Кузнице, поэтому жест работает и во время записи
+  const allowed = !['intro', 'error', 'menu'].includes(screen);
   const okBoth = allowed && state.hands.length === 2 && state.hands.every(isOkSign);
   backSince = okBoth ? backSince || now : 0;
   const p = backSince ? Math.min(1, (now - backSince) / BACK_HOLD_MS) : 0;
+  const cues = CUE_SCREENS.includes(screen);
   // подсказку видно всегда на спокойных экранах и только во время удержания — в бою и сценах
-  const calm = ['dojo', 'results', 'forge', 'chapters'].includes(screen);
-  backCue.hidden = !allowed || (!calm && !p);
+  const calm = ['results', 'chapters', 'manga', 'path'].includes(screen);
+  backCue.hidden = !allowed || cues || (!calm && !p);
   backCue.classList.toggle('active', p > 0);
   backCue.classList.toggle('dim', p === 0);
   backRing.style.strokeDashoffset = String(119.4 * (1 - p));
+  if (cues) paintCue(screen, 'both', p);
+
+  // «окей» одной рукой — действие экрана (записать заново / пропустить урок); после срабатывания
+  // ждём, пока руку опустят, чтобы не повторялось
+  const okOne = cues && state.hands.length === 1 && isOkSign(state.hands[0]);
+  if (!okOne) oneArmed = true;
+  oneSince = okOne && oneArmed ? oneSince || now : 0;
+  const q = oneSince ? Math.min(1, (now - oneSince) / BACK_HOLD_MS) : 0;
+  if (cues) paintCue(screen, 'one', q);
+  if (q >= 1) {
+    oneSince = 0;
+    oneArmed = false;
+    sfx.success();
+    document.querySelector(`#screen-${screen} [data-cue="one"]`)?.click();
+  }
+
   if (p >= 1) {
     backSince = 0;
     sfx.success();

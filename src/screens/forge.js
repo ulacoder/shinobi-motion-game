@@ -113,13 +113,9 @@ export const forge = {
     if (ready >= 1 && now - this.lastSampleAt > SAMPLE_GAP_MS) {
       this.lastSampleAt = now;
       // встроенная печать — в бою сработает она, а не своя: просим другой жест
-      // «окей» занят: двумя руками это жест «назад в меню», печать на нём мешала бы выходу
+      // «окей» — жесты управления (одной рукой — записать заново, двумя — в меню): снимок не делаем
       if (hands.some(isOkSign)) {
-        sfx.hint();
-        this.samples = [];
-        this.forms = [];
-        this.renderDots();
-        sensei.show('«Окей» занят — это жест «назад в меню». Придумай другой: «козу», сердечко, рожки', 'warn', now, { lock: 2500, ttl: 4000 });
+        sensei.show('«Окей» — это управление: одной рукой — записать заново, двумя — в меню. Для печати придумай другой жест', 'info', now, { lock: 1500, ttl: 3000 });
         return;
       }
       const same = classify(hands)[0];
@@ -197,7 +193,7 @@ export const forge = {
     } else {
       this.holdSince = 0;
     }
-    if (issue) return;
+    if (issue || hands.some(isOkSign)) return;
     if (!hands.length) sensei.show(this.count ? 'Покажи жест ещё раз' : 'Повтори свой жест', 'info', now);
     else if (!ev.passed && ev.hint && ev.accuracy >= 0.4) sensei.show(ev.hint, 'warn', now);
     else if (!ev.passed && !ev.missingHands) sensei.show(`Это другой жест. Твоя печать: ${describeTemplate(this.tpl)}`, 'warn', now);
