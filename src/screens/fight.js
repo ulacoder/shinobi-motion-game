@@ -427,6 +427,14 @@ export const fight = {
           if (!best || e.accuracy > best.accuracy) state.run.bestForms[e.seal] = { form, accuracy: e.accuracy };
           this.handle(b.onSeal(e.seal, e.accuracy, now), now);
         } else if (e.type === 'hint' && !issue && !forgedNow) {
+          // для «отчёта ладони»: какие пальцы подвели в этой попытке
+          // одна и та же ошибка пальца считается не чаще раза в 2 секунды — это одна попытка
+          this.missAt ??= {};
+          for (const key of badFingers(best)) {
+            if (now - (this.missAt[key] ?? -Infinity) < 2000) continue;
+            this.missAt[key] = now;
+            state.run.fingerMiss[key] = (state.run.fingerMiss[key] ?? 0) + 1;
+          }
           b.noteMistake(e.hint, now);
           sensei.show(e.hint, 'warn', now);
         }

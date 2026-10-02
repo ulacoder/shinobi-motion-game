@@ -36,6 +36,7 @@ export function startStory({ quick = false, chapter = 1 } = {}) {
     quick,
     stats: emptyStats(),
     mistakes: new Map(),
+    fingerMiss: {}, // «left:ring» → сколько раз палец подвёл (для отчёта ладони)
     playerHp: PLAYER_MAX_HP,
     chakra: quick ? 60 : 0,
     startedAt: performance.now(),
@@ -71,6 +72,7 @@ export function finishRun(win, reason) {
     time: timeSec,
     stats: state.run.stats,
     mistakes: topMistakes(state.run.mistakes),
+    fingerMiss: state.run.fingerMiss,
     stage: step.stage,
     name: state.run.name,
     bestForms: state.run.bestForms,

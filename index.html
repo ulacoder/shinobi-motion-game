@@ -308,6 +308,12 @@
 
       <!-- 6. Итоги -->
       <section id="screen-results" class="screen">
+        <aside class="scroll palm-panel" aria-label="Отчёт ладони">
+          <h3>Отчёт ладони</h3>
+          <canvas id="palm-report" width="544" height="340"></canvas>
+          <p id="palm-worst" class="palm-worst"></p>
+          <p class="palm-legend"><i class="ok"></i> без ошибок <i class="mid"></i> иногда <i class="bad"></i> чаще всего</p>
+        </aside>
         <article class="scroll results">
           <p id="res-kicker" class="kicker">Бой окончен</p>
           <h2 id="res-title">Победа</h2>
@@ -320,6 +326,7 @@
           </div>
           <div class="mistakes">
             <h3>Над чем поработать</h3>
+            <p id="palm-worst-m" class="palm-worst-m"></p>
             <ul id="res-mistakes"></ul>
           </div>
           <div class="records">
