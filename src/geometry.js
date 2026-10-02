@@ -101,6 +101,10 @@ export function buildHands(result, aspect = 16 / 9) {
       palm: dist(screen[0], screen[9]),
       bbox: { minX: Math.min(...xs), maxX: Math.max(...xs), minY: Math.min(...ys), maxY: Math.max(...ys) },
       side: 'center',
+      // какая это рука у самого человека (по модели MediaPipe) — нужна только для печати на двоих:
+      // две руки с одной меткой не могут принадлежать одному человеку
+      label: (result.handedness ?? result.handednesses)?.[i]?.[0]?.categoryName ?? null,
+      labelScore: (result.handedness ?? result.handednesses)?.[i]?.[0]?.score ?? 0,
       aspect,
     });
   }
@@ -117,6 +121,13 @@ export function buildHands(result, aspect = 16 / 9) {
   }
   return hands;
 }
+
+/** Подписи для печати на двоих: рука слева — первый игрок, справа — второй. */
+export const PLAYER_NAMES = {
+  left: { nom: 'рука игрока слева', acc: 'руку игрока слева', prep: 'руке игрока слева' },
+  right: { nom: 'рука игрока справа', acc: 'руку игрока справа', prep: 'руке игрока справа' },
+  center: { nom: 'рука', acc: 'руку', prep: 'руке' },
+};
 
 export const SIDE_NAMES = {
   left: { nom: 'левая рука', acc: 'левую руку', prep: 'левой руке' },

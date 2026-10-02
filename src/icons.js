@@ -65,6 +65,9 @@ export function sealIcon(sealId, { size = 64, title = true } = {}) {
   let body = '';
   if (sealId === 'dragon') {
     body = hand(FIST, 50, 64, { scale: 1 }) + hand(seal.roles[1].fingers, 50, 34, { scale: 0.95 });
+  } else if (sealId === 'friend') {
+    // две правые руки двух игроков — одинаковые, не зеркальные
+    body = hand(seal.roles[0].fingers, 30, 56) + hand(seal.roles[1].fingers, 70, 56);
   } else if (sealId === 'dog') {
     body = hand(FIST, 30, 56) + hand(seal.roles[1].fingers, 70, 56, { mirror: true });
   } else {

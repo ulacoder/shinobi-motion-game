@@ -1,6 +1,6 @@
 // Сюжетные сцены в стиле манги: портрет, реплика с озвучкой, перелистывание жестом «раскрытые ладони».
 
-import { SEALS, NEAR_ACCURACY, classify, evaluateSeal } from '../seals.js';
+import { SEALS, NEAR_ACCURACY, classify, evaluateSeal, twoPlayers } from '../seals.js';
 import { ENEMIES, PLAYER_MAX_HP } from '../battle.js';
 import { drawPortrait } from '../characters.js';
 import { sfx, playVoice, preloadVoices, hasVoice, stopVoice } from '../audio.js';
@@ -114,6 +114,9 @@ export const scene = {
       setWidth($('scene-gesture-fill'), '0%');
       card.classList.remove('done');
       this.lineDur = Infinity;
+      // печать на двоих: два места — «Игрок 1» и «Игрок 2»
+      $('scene-coop').hidden = !s.coop;
+      if (s.coop) this.paintCoop('none');
     }
     const portrait = $('scene-portrait');
     portrait.style.animation = 'none';
@@ -181,6 +184,7 @@ Object.assign(scene, {
       return;
     }
     const ev = evaluateSeal(w.seal, state.hands);
+    if (SEALS[w.seal].coop) this.paintCoop(state.hands.length < 2 ? (state.hands.length ? 'one-hand' : 'none') : twoPlayers(state.hands));
     this.overlayTone = ev.passed ? 'pass' : ev.accuracy >= NEAR_ACCURACY ? 'near' : 'idle';
     this.overlayBad = ev.passed ? null : badFingers(ev);
     this.overlayGuide = !ev.passed && ev.accuracy >= NEAR_ACCURACY ? wantsBySide(ev) : null;
@@ -193,6 +197,25 @@ Object.assign(scene, {
     w.since = 0;
     setWidth($('scene-gesture-fill'), pct(Math.min(0.95, ev.accuracy) * 0.6));
     if (!reportFrameIssue(now) && ev.hint && now - this.lineStart > 1200) sensei.show(ev.hint, 'warn', now);
+  },
+
+  /** Места игроков: none — никого, one-hand — одна рука, one — обе руки одного человека, two — вас двое. */
+  paintCoop(mode) {
+    if (mode === this.coopMode) return;
+    this.coopMode = mode;
+    const [p1, p2] = document.querySelectorAll('#scene-coop .coop-slot');
+    const box = $('scene-coop');
+    p1.dataset.state = mode === 'none' ? '' : 'on';
+    p2.dataset.state = mode === 'two' ? 'on' : mode === 'one' ? 'bad' : '';
+    box.classList.toggle('together', mode === 'two');
+    box.classList.toggle('solo', mode === 'one');
+    $('scene-coop-note').textContent = {
+      none: 'Ждём двоих: встаньте рядом перед камерой. Нет второго игрока — пробел',
+      'one-hand': 'Игрок 1 на месте. Где второй? Позови друга',
+      one: 'Это обе руки одного человека. Нужен второй игрок — каждый даёт правую руку',
+      unknown: 'Покажите обе руки камере целиком — проверяю, что вас двое',
+      two: 'Вас двое! Теперь сцепите мизинцы',
+    }[mode];
   },
 
   gestureDone(now, accuracy) {
@@ -224,7 +247,12 @@ Object.assign(scene, {
       priority: fx === 'friend' ? 4 : 1,
       once: `g-${w.seal}`,
     });
-    sensei.show(`Отлично! ${SEALS[w.seal].name}: совпадение ${pct(accuracy)}`, 'good', now, { lock: 1100 });
+    sensei.show(
+      fx === 'friend' ? `Печать дружбы! Вы сложили её вдвоём — совпадение ${pct(accuracy)}` : `Отлично! ${SEALS[w.seal].name}: совпадение ${pct(accuracy)}`,
+      'good',
+      now,
+      { lock: 1100 },
+    );
   },
 });
 

@@ -2,7 +2,7 @@
 // как расположены руки). Правило даёт оценку 0..1 и готовую подсказку, если не выполнено.
 // Поэтому «режим ошибки» точно знает, ЧТО не так, а не просто «не распознано».
 
-import { FINGERS, FINGER_NAMES, SIDE_NAMES, clamp01, dist } from './geometry.js';
+import { FINGERS, FINGER_NAMES, SIDE_NAMES, PLAYER_NAMES, clamp01, dist } from './geometry.js';
 
 export const PASS_ACCURACY = 0.75; // порог «печать засчитана»
 export const NEAR_ACCURACY = 0.45; // порог «почти получилось — подскажем»
@@ -71,18 +71,19 @@ export const SEALS = {
     ],
     relations: [{ type: 'above', upper: 1, lower: 0 }],
   },
-  // Сюжетная печать финала (в бою не распознаётся): двое игроков дают по руке и сцепляют мизинцы —
-  // японская клятва «юбикири».
+  // Сюжетная печать финала — только вдвоём (в бою не распознаётся): два игрока дают по ПРАВОЙ руке
+  // и сцепляют мизинцы — японская клятва «юбикири». Две правые руки не могут быть у одного человека.
   friend: {
     id: 'friend',
     name: 'Печать дружбы',
     kanji: '友',
-    how: 'Двое: каждый даёт одну руку — пальцы согнуты, мизинец вверх. Сцепите мизинцы.',
+    coop: true,
+    how: 'Вдвоём: каждый даёт правую руку, мизинец вверх — сцепите мизинцы.',
     roles: [
       { label: 'мизинец', fingers: { thumb: null, index: DOWN, middle: DOWN, ring: DOWN, pinky: UP } },
       { label: 'мизинец', fingers: { thumb: null, index: DOWN, middle: DOWN, ring: DOWN, pinky: UP } },
     ],
-    relations: [{ type: 'pinkies', max: 1.1 }],
+    relations: [{ type: 'pinkies', max: 1.1 }, { type: 'twoPlayers' }],
   },
 };
 
@@ -90,10 +91,10 @@ export const SEAL_ORDER = ['tiger', 'snake', 'bird', 'dog', 'dragon'];
 
 // ---------- правила ----------
 
-function fingerRule(hand, finger, want) {
+function fingerRule(hand, finger, want, names = SIDE_NAMES) {
   const e = hand.ext[finger];
   const score = want === UP ? e : 1 - e;
-  const side = SIDE_NAMES[hand.side];
+  const side = names[hand.side];
   const name = FINGER_NAMES[finger];
   let hint;
   if (want === UP) {
@@ -104,11 +105,11 @@ function fingerRule(hand, finger, want) {
   return { kind: 'finger', finger, want, side: hand.side, score, hint, weight: 1 };
 }
 
-function roleRules(hand, role) {
+function roleRules(hand, role, names = SIDE_NAMES) {
   const rules = [];
   for (const f of FINGERS) {
     const want = role.fingers[f];
-    if (want) rules.push(fingerRule(hand, f, want));
+    if (want) rules.push(fingerRule(hand, f, want, names));
   }
   if (role.pointUp) {
     // Указательный должен смотреть вверх: кончик выше основания.
@@ -120,22 +121,22 @@ function roleRules(hand, role) {
       label: 'указательный смотрит вверх',
       side: hand.side,
       score: clamp01(up / 0.6),
-      hint: `На ${SIDE_NAMES[hand.side].prep}: направь указательный палец вверх`,
+      hint: `На ${names[hand.side].prep}: направь указательный палец вверх`,
       weight: 1,
     });
   }
   // Если провалено сразу много пальцев — одна понятная подсказка вместо пяти мелких.
   const bad = rules.filter((r) => r.kind === 'finger' && r.score < 0.5);
   if (bad.length >= 3) {
-    const acc = SIDE_NAMES[hand.side].acc;
+    const acc = names[hand.side].acc;
     const summary =
       role.label === 'кулак'
         ? `Сожми ${acc} в кулак`
         : role.label === 'ладонь'
           ? `Раскрой ${acc}: все пальцы прямые`
           : role.label === 'указка'
-            ? `На ${SIDE_NAMES[hand.side].prep}: подними только указательный палец`
-            : `На ${SIDE_NAMES[hand.side].prep}: ${roleShape(role)}`;
+            ? `На ${names[hand.side].prep}: подними только указательный палец`
+            : `На ${names[hand.side].prep}: ${roleShape(role)}`;
     for (const r of bad) r.summary = summary;
   }
   return rules;
@@ -171,7 +172,34 @@ function relationRule(rel, hands) {
     const score = clamp01(1 - (d - rel.max) / (rel.max * 1.5));
     return { kind: 'relation', label: 'мизинцы сцеплены', score, hint: 'Сцепите мизинцы: кончики должны встретиться', weight: 1.5 };
   }
+  if (rel.type === 'twoPlayers') {
+    const verdict = twoPlayers(hands);
+    // строго: печать засчитывается, только если модель уверена, что руки от двух разных людей
+    const score = verdict === 'two' ? 1 : verdict === 'one' ? 0 : 0.2;
+    return {
+      kind: 'relation',
+      label: 'руки двух игроков',
+      score,
+      verdict,
+      hint:
+        verdict === 'one'
+          ? 'Это руки одного человека. Нужен второй игрок: каждый даёт свою правую руку'
+          : 'Покажите обе руки камере целиком — проверяю, что вас двое',
+      weight: 2,
+    };
+  }
   return { kind: 'relation', label: '', score: 1, hint: '', weight: 0 };
+}
+
+/**
+ * Чьи это руки: 'two' — две руки с одной меткой (две правые) — значит, два человека;
+ * 'one' — левая и правая, как у одного человека; 'unknown' — модель не уверена.
+ */
+export function twoPlayers(hands) {
+  if (hands.length < 2) return 'unknown';
+  const [a, b] = hands;
+  if (!a.label || !b.label || a.labelScore < 0.55 || b.labelScore < 0.55) return 'unknown';
+  return a.label === b.label ? 'two' : 'one';
 }
 
 function aggregate(rules) {
@@ -195,6 +223,7 @@ function aggregate(rules) {
 export function evaluateSeal(sealId, hands) {
   const seal = SEALS[sealId];
   const need = seal.roles.length;
+  const names = seal.coop ? PLAYER_NAMES : SIDE_NAMES;
 
   if (hands.length === 0) {
     return {
@@ -211,7 +240,7 @@ export function evaluateSeal(sealId, hands) {
     // Одна рука из двух: оцениваем лучшую роль, но точность режем вдвое.
     let best = null;
     for (const role of seal.roles) {
-      const rules = roleRules(hands[0], role);
+      const rules = roleRules(hands[0], role, names);
       const agg = aggregate(rules);
       if (!best || agg.accuracy > best.agg.accuracy) best = { rules, agg };
     }
@@ -220,7 +249,7 @@ export function evaluateSeal(sealId, hands) {
       accuracy: best.agg.accuracy * 0.5,
       passed: false,
       rules: best.rules,
-      hint: 'Нужны обе руки: вторую камера не видит, подними её к лицу',
+      hint: seal.coop ? 'Нужна вторая рука — от второго игрока: встаньте рядом' : 'Нужны обе руки: вторую камера не видит, подними её к лицу',
       missingHands: true,
     };
   }
@@ -232,7 +261,7 @@ export function evaluateSeal(sealId, hands) {
   for (const order of orders) {
     const assigned = order.map((i) => pair[i]);
     const rules = [];
-    seal.roles.forEach((role, k) => rules.push(...roleRules(assigned[k], role)));
+    seal.roles.forEach((role, k) => rules.push(...roleRules(assigned[k], role, names)));
     for (const rel of seal.relations) rules.push(relationRule(rel, assigned));
     const agg = aggregate(rules);
     if (!best || agg.accuracy > best.agg.accuracy) best = { rules, agg };
