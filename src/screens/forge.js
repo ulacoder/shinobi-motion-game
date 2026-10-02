@@ -5,11 +5,13 @@
 // Фазы: record (снимки) → check (3 повтора с разбором) → done (печать выкована, выбор жестом).
 
 import { FINGERS, FINGER_NAMES, SIDE_NAMES } from '../geometry.js';
+import { SEALS, classify } from '../seals.js';
 import { FORGE_SAMPLES, FORGE_PASS, features, learnTemplate, evaluateTemplate, describeTemplate, nameForSeal } from '../forge.js';
 import { sfx } from '../audio.js';
 import { music } from '../music.js';
 import { saveForged } from '../storage.js';
 import { $, el, GestureChoice, stamp, snapshotHands, drawHandForm } from '../ui.js';
+import { startStory, nextStep } from '../app/story.js';
 import { arena, sensei, state, registerScreen, go, setText, setWidth, pct, badFingers, reportFrameIssue } from '../app/context.js';
 
 const REPEATS = 3; // сколько раз повторить жест после записи
@@ -27,13 +29,16 @@ function motion(a, b) {
 }
 
 export const forge = {
-  enter() {
+  /** step — шаг сюжета (глава 3): тогда после ковки история идёт дальше сама. */
+  enter(step) {
+    this.story = !!step;
     this.restart();
     this.choice ??= new GestureChoice($('forge-done'), {
       snake: () => go('menu'),
       tiger: () => this.restart(),
+      bird: () => startStory({ quick: true }),
     });
-    arena.setPlace('night');
+    arena.setPlace(this.story ? step.place : 'night');
     arena.showEnemy(null);
     music.play('calm');
     music.setPlace('forest');
@@ -59,7 +64,7 @@ export const forge = {
     $('forge-done').hidden = true;
     $('forge-pair').hidden = true;
     $('forge-hanko').textContent = '鍛';
-    $('forge-kicker').textContent = 'Кузница печатей · шаг 1 из 2';
+    $('forge-kicker').textContent = this.story ? 'Глава 3 · Кузница · шаг 1 из 2' : 'Кузница печатей · шаг 1 из 2';
     $('forge-name').textContent = 'Придумай свою печать';
     $('forge-how').textContent =
       'Любой жест одной или двумя руками: «коза», «окей», сердечко из ладоней. Покажи его камере и замри — я сделаю 5 снимков и выведу для него правила.';
@@ -105,6 +110,22 @@ export const forge = {
     this.overlayTone = ready >= 1 ? 'pass' : 'near';
     if (ready >= 1 && now - this.lastSampleAt > SAMPLE_GAP_MS) {
       this.lastSampleAt = now;
+      // встроенная печать — в бою сработает она, а не своя: просим другой жест
+      const same = classify(hands)[0];
+      if (same?.passed) {
+        sfx.hint();
+        this.samples = [];
+        this.forms = [];
+        this.renderDots();
+        sensei.show(`Это уже печать «${SEALS[same.seal].name}». Придумай другой жест — например «козу» или «окей»`, 'warn', now, { lock: 2500, ttl: 4000 });
+        return;
+      }
+      // число рук поменялось посреди записи — начинаем снимки заново
+      if (this.samples.length && this.samples[0].count !== f.count) {
+        this.samples = [];
+        this.forms = [];
+        sensei.show('Число рук поменялось — снимаю заново. Держи один и тот же жест', 'warn', now, { lock: 1500 });
+      }
       this.samples.push(f);
       this.forms.push(snapshotHands(hands));
       sfx.seal();
@@ -189,14 +210,20 @@ export const forge = {
     this.phase = 'done';
     this.overlayBad = null;
     const avg = this.accs.reduce((s, v) => s + v, 0) / this.accs.length;
-    saveForged({ name: this.seal.name, kanji: this.seal.kanji, tpl: this.tpl, form: this.seal.form, acc: avg, at: Date.now() });
+    saveForged({ name: this.seal.name, kanji: this.seal.kanji, effect: this.seal.effect, tpl: this.tpl, form: this.seal.form, acc: avg, at: Date.now() });
     sfx.win();
     $('forge-kicker').textContent = 'Печать выкована';
     $('forge-how').textContent = `${this.seal.name}: ${REPEATS} точных повтора, среднее совпадение ${pct(avg)}. Игра выучила твой жест по 5 снимкам — без нейросети, по углам суставов.`;
     $('forge-checks').replaceChildren();
+    if (this.story) {
+      // в сюжете — сразу дальше, к Кагэро
+      this.nextAt = now + 3200;
+      sensei.show(`${this.seal.name} — теперь твоя техника. Покажи её в бою с Кагэро!`, 'good', now, { lock: 3000, ttl: 3500 });
+      return;
+    }
     $('forge-done').hidden = false;
     this.choice.reset();
-    sensei.show('Готово! Раскрой обе ладони — в меню. Тигр — выковать ещё одну', 'good', now, { lock: 2000, ttl: 4000 });
+    sensei.show('Готово! Птица — в бой с этой печатью. Змея — меню. Тигр — выковать ещё', 'good', now, { lock: 2000, ttl: 4500 });
   },
 
   setMeter(acc, pass) {
@@ -246,6 +273,13 @@ export const forge = {
   update(now) {
     if (this.phase === 'record') return this.updateRecord(now);
     if (this.phase === 'check') return this.updateCheck(now);
+    if (this.story) {
+      if (this.nextAt && now >= this.nextAt) {
+        this.nextAt = 0;
+        nextStep();
+      }
+      return;
+    }
     const active = this.choice.update(state.hands, now);
     this.overlayTone = active ? 'pass' : 'idle';
   },

@@ -50,7 +50,7 @@ export function startStory({ quick = false, chapter = 1 } = {}) {
 export function playStep() {
   const step = state.run.story[state.run.step];
   if (!step) return finishRun(true, 'Кагэро повержен. Деревня спасена');
-  go(step.type === 'scene' ? 'scene' : step.type === 'chest' ? 'chest' : 'battle', step);
+  go(step.type === 'fight' ? 'battle' : step.type, step);
 }
 
 export function nextStep() {

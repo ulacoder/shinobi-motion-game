@@ -1,12 +1,13 @@
 // Сюжетные сцены в стиле манги: портрет, реплика с озвучкой, перелистывание жестом «раскрытые ладони».
 
-import { classify } from '../seals.js';
+import { SEALS, NEAR_ACCURACY, classify, evaluateSeal } from '../seals.js';
 import { ENEMIES, PLAYER_MAX_HP } from '../battle.js';
 import { drawPortrait } from '../characters.js';
 import { sfx, playVoice, preloadVoices, hasVoice, stopVoice } from '../audio.js';
 import { music } from '../music.js';
-import { $ } from '../ui.js';
-import { arena, sensei, state, registerScreen, setText, setWidth, pct } from '../app/context.js';
+import { $, stamp } from '../ui.js';
+import { sealIcon } from '../icons.js';
+import { arena, sensei, state, registerScreen, setText, setWidth, pct, badFingers, reportFrameIssue } from '../app/context.js';
 import { nextStep } from '../app/story.js';
 
 export const sceneLog = [];
@@ -57,6 +58,8 @@ export const scene = {
     $('scene-who').textContent = '';
     preloadVoices(step.lines.map((l) => l.id));
     document.querySelector('.manga').style.visibility = 'hidden';
+    this.wait = null;
+    $('scene-gesture').hidden = true;
     this.onClick ??= () => this.skip(performance.now());
     document.querySelector('.bubble').addEventListener('click', this.onClick);
   },
@@ -64,6 +67,9 @@ export const scene = {
   exit() {
     stopVoice();
     this.line = null;
+    this.wait = null;
+    this.overlayBad = null;
+    $('scene-gesture').hidden = true;
     $('title-card').hidden = true;
     document.querySelector('.bubble').removeEventListener('click', this.onClick);
   },
@@ -92,6 +98,21 @@ export const scene = {
     });
     document.querySelector('.manga').style.visibility = 'visible';
     $('scene-who').textContent = sp.name;
+    // Сюжетный жест: история ждёт, пока игрок сложит печать (с подсказками по пальцам)
+    this.wait = line.gesture ? { seal: line.gesture, since: 0, done: 0 } : null;
+    this.overlayBad = null;
+    const card = $('scene-gesture');
+    card.hidden = !this.wait;
+    document.querySelector('.skip-cue').style.visibility = this.wait ? 'hidden' : '';
+    if (this.wait) {
+      const s = SEALS[line.gesture];
+      $('scene-gesture-icon').innerHTML = sealIcon(line.gesture, { size: 64 });
+      $('scene-gesture-name').textContent = `Сложи «${s.name}»`;
+      $('scene-gesture-how').textContent = s.how;
+      setWidth($('scene-gesture-fill'), '0%');
+      card.classList.remove('done');
+      this.lineDur = Infinity;
+    }
     const portrait = $('scene-portrait');
     portrait.style.animation = 'none';
     void portrait.offsetWidth;
@@ -101,6 +122,8 @@ export const scene = {
 
   skip(now) {
     if (!this.line) return;
+    // жест ещё не сложен: клик или пробел засчитывают его (запасной путь для показа)
+    if (this.wait && !this.wait.done) return this.gestureDone(now, 1);
     const typed = Math.floor((now - this.lineStart) / 28);
     if (typed < this.line.text.length) this.lineStart = now - this.line.text.length * 28;
     else this.showLine(now);
@@ -122,6 +145,8 @@ export const scene = {
       drawPortrait($('scene-portrait'), this.sp.look, { t: now / 1000, tint: this.sp.tint, mood: this.sp.mood, bg: this.sp.bg });
     }
 
+    if (this.wait) return this.updateGesture(now);
+
     // Жест «дальше»: раскрытые ладони (Змея), держать полсекунды
     const snake = classify(state.hands, ['snake'])[0];
     if (!snake.passed) {
@@ -139,5 +164,49 @@ export const scene = {
     if (now - this.lineStart > this.lineDur) this.showLine(now);
   },
 };
+
+Object.assign(scene, {
+  /** Ждём сюжетный жест: оценка правил печати, красные пальцы и подсказка сенсея, удержание 0,6 с. */
+  updateGesture(now) {
+    const w = this.wait;
+    if (w.done) {
+      if (now - w.done > 1300) {
+        this.wait = null;
+        $('scene-gesture').hidden = true;
+        document.querySelector('.skip-cue').style.visibility = '';
+        this.showLine(now);
+      }
+      return;
+    }
+    const ev = evaluateSeal(w.seal, state.hands);
+    this.overlayTone = ev.passed ? 'pass' : ev.accuracy >= NEAR_ACCURACY ? 'near' : 'idle';
+    this.overlayBad = ev.passed ? null : badFingers(ev);
+    if (ev.passed) {
+      w.since ||= now;
+      setWidth($('scene-gesture-fill'), pct(Math.min(1, (now - w.since) / 600)));
+      if (now - w.since >= 600) this.gestureDone(now, ev.accuracy);
+      return;
+    }
+    w.since = 0;
+    setWidth($('scene-gesture-fill'), pct(Math.min(0.95, ev.accuracy) * 0.6));
+    if (!reportFrameIssue(now) && ev.hint && now - this.lineStart > 1200) sensei.show(ev.hint, 'warn', now);
+  },
+
+  gestureDone(now, accuracy) {
+    const w = this.wait;
+    w.done = now;
+    this.overlayBad = null;
+    stamp($('stamp'), SEALS[w.seal].kanji);
+    sfx.seal();
+    sfx.success();
+    $('scene-gesture').classList.add('done');
+    setWidth($('scene-gesture-fill'), '100%');
+    const fx = this.line.fx;
+    if (fx === 'shield') (arena.shieldUp(), sfx.shield());
+    if (fx === 'fire') (arena.label('火!', '#f0b64a'), sfx.fire());
+    if (fx === 'ready') arena.label('準備!', '#6fd08c');
+    sensei.show(`Отлично! ${SEALS[w.seal].name}: совпадение ${pct(accuracy)}`, 'good', now, { lock: 1100 });
+  },
+});
 
 registerScreen('scene', scene);

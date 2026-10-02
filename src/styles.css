@@ -2983,3 +2983,76 @@ button {
     top: calc(var(--gutter) + 52px);
   }
 }
+
+/* ---------- сюжетный жест в сцене ---------- */
+
+.scene-gesture {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 14px;
+  row-gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #fff6e0;
+  box-shadow: 0 0 0 3px var(--gold) inset;
+  animation: gesture-pulse 1.4s ease-in-out infinite;
+}
+
+.scene-gesture[hidden] {
+  display: none;
+}
+
+.scene-gesture.done {
+  animation: none;
+  box-shadow: 0 0 0 3px #3f9a5a inset;
+  background: #e9f7ec;
+}
+
+.scene-gesture-icon svg {
+  width: 64px;
+  height: 64px;
+}
+
+.scene-gesture-text {
+  display: grid;
+  gap: 2px;
+  color: var(--ink);
+}
+
+.scene-gesture-text b {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.scene-gesture-text span {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.scene-gesture-meter {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(42, 31, 26, 0.12);
+  overflow: hidden;
+}
+
+.scene-gesture-meter i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--seal);
+  transition: width 0.1s linear;
+}
+
+.scene-gesture.done .scene-gesture-meter i {
+  background: #3f9a5a;
+}
+
+@keyframes gesture-pulse {
+  0%, 100% { box-shadow: 0 0 0 3px var(--gold) inset; }
+  50% { box-shadow: 0 0 0 3px var(--seal) inset, 0 0 18px rgba(204, 51, 37, 0.35); }
+}
