@@ -3,7 +3,8 @@
 // 2) скачивает модель рук в public/models (если её ещё нет)
 // 3) собирает audio-manifest.json — список своих звуков (public/sounds) и озвучки (public/voices)
 // Если скачать модель не удалось, игра сама загрузит её с серверов Google при запуске.
-import { cp, mkdir, readdir, stat, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readdir, readFile, stat, writeFile } from 'node:fs/promises';
+import { gzipSync, constants } from 'node:zlib';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -41,6 +42,18 @@ if (await exists(modelDst)) {
     console.warn(`! Не удалось скачать модель (${err.message}). Игра загрузит её из сети при запуске.`);
   }
 }
+
+// Сжатые копии движка и модели: браузер скачивает ~9 МБ вместо ~20 и сам распаковывает их
+// (DecompressionStream). Так загрузка быстрее на любом хостинге, даже если сервер не сжимает файлы.
+async function gzipCopy(src) {
+  if (!(await exists(src))) return;
+  const raw = await readFile(src);
+  const gz = gzipSync(raw, { level: constants.Z_BEST_COMPRESSION });
+  await writeFile(`${src}.gz`, gz);
+  console.log(`✓ ${src.split('/').slice(-2).join('/')}.gz: ${(raw.length / 1e6).toFixed(1)} → ${(gz.length / 1e6).toFixed(1)} МБ`);
+}
+await gzipCopy(join(wasmDst, 'vision_wasm_internal.wasm'));
+await gzipCopy(modelDst);
 
 // Список записанных звуков и реплик, чтобы игра не искала файлы наугад.
 const AUDIO = /\.(mp3|wav|ogg|m4a|webm)$/i;

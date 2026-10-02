@@ -1146,13 +1146,24 @@ async function boot() {
 $('btn-start').addEventListener('click', boot);
 
 // Модель рук начинаем качать сразу, пока игрок читает заставку.
+const introIdle = () => app.dataset.screen === 'intro' && !$('btn-start').disabled;
 const introProgress = (p) => {
-  if (app.dataset.screen === 'intro' && !$('btn-start').disabled) {
-    $('intro-status').textContent = p < 1 ? `Готовлю распознавание рук: ${Math.round(p * 100)}%` : 'Распознавание рук готово';
-  }
+  if (introIdle()) $('intro-status').textContent = `Готовлю распознавание рук: ${Math.round(p * 100)}%`;
 };
-prefetchRecognition(introProgress).then(() => stopProgress(introProgress));
+const introStatus = (t) => {
+  if (introIdle()) $('intro-status').textContent = t;
+};
+prefetchRecognition(introProgress).then(() => {
+  stopProgress(introProgress);
+  // Сразу после скачивания создаём и прогреваем распознаватель — к нажатию кнопки он уже готов.
+  createHandTracker(introStatus).catch(() => {});
+});
 $('btn-retry').addEventListener('click', () => location.reload());
+
+// Повторные визиты: тяжёлые файлы (движок, модель, голоса) берутся из кэша сервис-воркера.
+if (import.meta.env.PROD && 'serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
 
 // Если доступ к камере уже был разрешён раньше — стартуем без клика.
 navigator.permissions
@@ -1217,6 +1228,7 @@ let frameAvg = 16;
 let lastDetectAt = 0;
 let detectGap = 0;
 let detectCost = 8;
+let lastStampMs = 1;
 function loop(now) {
   const dt = Math.min(0.05, (now - prev) / 1000);
   frameAvg = frameAvg * 0.95 + (now - prev) * 0.05;
@@ -1234,7 +1246,9 @@ function loop(now) {
     lastDetectAt = now;
     try {
       const t0 = performance.now();
-      const result = tracker.detectForVideo(video, now);
+      // MediaPipe требует строго растущие метки времени
+      lastStampMs = Math.max(now, lastStampMs + 1);
+      const result = tracker.detectForVideo(video, lastStampMs);
       // Если распознавание тяжёлое (слабый ноутбук), реже запускаем его, чтобы графика не тормозила.
       detectCost = detectCost * 0.9 + (performance.now() - t0) * 0.1;
       detectGap = detectCost > 22 ? 60 : detectCost > 14 ? 40 : 0;
