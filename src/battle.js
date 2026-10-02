@@ -539,6 +539,37 @@ export class Battle {
     return events;
   }
 
+  /**
+   * Кагэро крадёт выкованную печать: вызывается, когда игрок не успел повторить её быстрее босса.
+   * Удар своей же печатью; щит его держит.
+   */
+  stolenHit(damage, now) {
+    if (this.over) return [];
+    const blocked = now < this.shieldUntil;
+    if (blocked) {
+      this.stats.blocks += 1;
+      this.shieldUntil = 0;
+    } else {
+      this.playerHp = Math.max(0, this.playerHp - damage);
+      this.stats.hitsTaken += 1;
+      this.combo.count = 0;
+      this.combo.lastTech = null;
+    }
+    return [{ type: 'foe-hit', blocked, damage: blocked ? 0 : damage, stolen: true }, ...this.checkEnd(now)];
+  }
+
+  /** Игрок вернул украденную печать: босс оглушён надолго. */
+  stunFoe(ms, now) {
+    this.foe = { state: 'stunned', until: now + ms, chargeStart: 0 };
+    this.stats.stuns += 1;
+    return [{ type: 'stun' }];
+  }
+
+  /** Пауза в атаках босса (пока идёт сцена кражи печати). */
+  holdFoe(until) {
+    this.foe = { state: 'idle', until: Math.max(this.foe.until, until), chargeStart: 0 };
+  }
+
   checkEnd(now) {
     if (this.over) return [];
     if (this.enemyHp <= 0) {

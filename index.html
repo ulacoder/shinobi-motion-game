@@ -221,6 +221,12 @@
 
       <!-- 5. Бой -->
       <section id="screen-battle" class="screen">
+        <div id="steal" class="steal" hidden aria-live="assertive">
+          <p class="steal-title">Кагэро украл твою печать!</p>
+          <canvas id="steal-hands" width="420" height="300"></canvas>
+          <p id="steal-sub" class="steal-sub">Повтори её быстрее него</p>
+          <div class="steal-bar"><i id="steal-fill"></i></div>
+        </div>
         <div class="hud-top">
           <div class="fighter fighter-hero">
             <canvas id="portrait-hero" class="portrait" width="120" height="120"></canvas>

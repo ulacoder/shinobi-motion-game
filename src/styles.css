@@ -3056,3 +3056,82 @@ button {
   0%, 100% { box-shadow: 0 0 0 3px var(--gold) inset; }
   50% { box-shadow: 0 0 0 3px var(--seal) inset, 0 0 18px rgba(204, 51, 37, 0.35); }
 }
+
+/* ---------- Кагэро крадёт печать ---------- */
+
+.steal {
+  position: absolute;
+  left: 50%;
+  top: 21%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: min(560px, 90vw);
+  padding: 14px 18px 18px;
+  border-radius: 16px;
+  background: rgba(30, 6, 18, 0.82);
+  box-shadow: 0 0 0 3px #ff3b30, 0 0 50px rgba(255, 40, 40, 0.55);
+  animation: steal-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+  pointer-events: none;
+}
+
+.steal[hidden] {
+  display: none;
+}
+
+.steal-title {
+  margin: 0;
+  font-family: var(--font-anime);
+  font-size: clamp(1.4rem, 3vw, 2.2rem);
+  color: #ff6b5e;
+  text-shadow: 3px 3px 0 #4a0710;
+}
+
+.steal canvas {
+  width: min(420px, 80vw);
+  height: auto;
+  filter: drop-shadow(0 0 14px rgba(255, 50, 40, 0.9));
+  animation: steal-pulse 0.6s ease-in-out infinite alternate;
+}
+
+.steal-sub {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.05rem;
+  color: var(--paper);
+}
+
+.steal-bar {
+  width: 100%;
+  height: 10px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+
+.steal-bar i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #ff3b30, #f0b64a);
+}
+
+.steal.won {
+  box-shadow: 0 0 0 3px #6fd08c, 0 0 50px rgba(111, 208, 140, 0.55);
+}
+
+.steal.won .steal-title {
+  color: #6fd08c;
+}
+
+@keyframes steal-in {
+  from { transform: translateX(-50%) scale(0.6); opacity: 0; }
+  to { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+
+@keyframes steal-pulse {
+  from { transform: scale(1) rotate(-1deg); }
+  to { transform: scale(1.04) rotate(1deg); }
+}
