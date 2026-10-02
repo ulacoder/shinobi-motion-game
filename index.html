@@ -63,7 +63,7 @@
         <header class="menu-head">
           <h1 class="title title-sm">Путь печатей</h1>
           <p class="subtitle">Подпешки → пешки → Кагэро, владыка клана Затмения</p>
-          <p class="lead">Покажи жест и держи секунду, чтобы выбрать. Можно и мышкой или клавишами 1–3.</p>
+          <p class="lead">Покажи жест и держи секунду, чтобы выбрать. Можно и мышкой или клавишами 1–4.</p>
         </header>
         <div class="choices">
           <button class="choice" data-choice="snake" type="button">
@@ -87,6 +87,14 @@
             <span class="choice-text">
               <strong>Быстрый бой с боссом</strong>
               <span>2–3 минуты. Обе руки: большой палец и мизинец в стороны</span>
+            </span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+          </button>
+          <button class="choice choice-new" data-choice="dog" type="button">
+            <span class="choice-icon" data-seal="dog"></span>
+            <span class="choice-text">
+              <strong>Кузница печатей <em class="new-tag">новое</em></strong>
+              <span>Придумай свой жест — игра выучит его. Собака: кулак + указательный вверх</span>
             </span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
@@ -123,6 +131,47 @@
           </div>
         </article>
         <button id="btn-skip" class="btn-ghost" type="button">Пропустить урок</button>
+      </section>
+
+      <!-- 4б. Кузница печатей -->
+      <section id="screen-forge" class="screen">
+        <ol id="forge-dots" class="steps" aria-label="Снимки жеста"></ol>
+        <article class="scroll lesson forge" aria-live="polite">
+          <div class="lesson-head">
+            <span id="forge-hanko" class="hanko hanko-lg">鍛</span>
+            <div>
+              <p id="forge-kicker" class="kicker">Кузница печатей</p>
+              <h2 id="forge-name">Придумай свою печать</h2>
+            </div>
+          </div>
+          <p id="forge-how" class="lesson-how"></p>
+          <div class="forge-pair" id="forge-pair" hidden>
+            <figure><canvas id="forge-ref" width="200" height="150"></canvas><figcaption>эталон</figcaption></figure>
+            <figure><canvas id="forge-live" width="200" height="150"></canvas><figcaption>сейчас</figcaption></figure>
+          </div>
+          <div id="forge-checks" class="checks"></div>
+          <div class="meter" aria-hidden="true">
+            <div id="forge-meter" class="meter-fill"></div>
+            <span class="meter-pass forge-pass"></span>
+          </div>
+          <p class="meter-label"><span id="forge-acc">0%</span> <span id="forge-label">готовность снимка</span></p>
+          <div id="forge-done" class="lesson-done" hidden>
+            <button class="choice" data-choice="snake" type="button">
+              <span class="choice-icon" data-seal="snake"></span>
+              <span class="choice-text"><strong>В меню</strong><span>Раскрой обе ладони</span></span>
+              <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+            </button>
+            <button class="choice" data-choice="tiger" type="button">
+              <span class="choice-icon" data-seal="tiger"></span>
+              <span class="choice-text"><strong>Выковать ещё</strong><span>Тигр: указательный и средний вверх</span></span>
+              <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+            </button>
+          </div>
+        </article>
+        <div class="forge-btns">
+          <button id="btn-forge-redo" class="btn-ghost" type="button">Записать заново (R)</button>
+          <button id="btn-forge-menu" class="btn-ghost" type="button">В меню (Esc)</button>
+        </div>
       </section>
 
       <!-- 5. Бой -->

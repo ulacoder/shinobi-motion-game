@@ -61,3 +61,14 @@ export function updateSealBest(sealId, accuracy) {
 export function getSealBest() {
   return load().sealBest;
 }
+
+/** Печати из Кузницы: храним последние три (эталон, имя, рисунок формы). */
+export function saveForged(seal) {
+  const data = load();
+  data.forged = [seal, ...(data.forged ?? [])].slice(0, 3);
+  save(data);
+}
+
+export function getForged() {
+  return load().forged ?? [];
+}

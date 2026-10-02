@@ -89,6 +89,7 @@ button {
 #app[data-screen='intro'] #screen-intro,
 #app[data-screen='error'] #screen-error,
 #app[data-screen='menu'] #screen-menu,
+#app[data-screen='forge'] #screen-forge,
 #app[data-screen='dojo'] #screen-dojo,
 #app[data-screen='battle'] #screen-battle,
 #app[data-screen='results'] #screen-results {
@@ -346,6 +347,7 @@ button {
   transform: translateY(-50%);
 }
 
+#app[data-screen='forge'] .cam,
 #app[data-screen='dojo'] .cam {
   left: var(--gutter);
   top: calc(var(--gutter) + 56px);
@@ -1006,6 +1008,7 @@ button {
   background: var(--leaf);
 }
 
+#app[data-screen='forge'] .sensei,
 #app[data-screen='dojo'] .sensei {
   top: auto;
   bottom: var(--gutter);
@@ -1107,6 +1110,7 @@ button {
   }
 
   #app[data-screen='menu'] .cam,
+  #app[data-screen='forge'] .cam,
   #app[data-screen='dojo'] .cam,
   #app[data-screen='battle'] .cam {
     left: var(--gutter);
@@ -1147,6 +1151,7 @@ button {
     display: none;
   }
 
+  #app[data-screen='forge'] .cam,
   #app[data-screen='dojo'] .cam {
     top: calc(var(--gutter) + 50px);
   }
@@ -1160,6 +1165,7 @@ button {
     max-height: 42%;
   }
 
+  #app[data-screen='forge'] .sensei,
   #app[data-screen='dojo'] .sensei {
     left: 50%;
     bottom: auto;
@@ -2091,6 +2097,7 @@ button {
     font-size: 15px;
   }
 
+  #app[data-screen='forge'] .cam,
   #app[data-screen='dojo'] .cam {
     top: calc(var(--gutter) + 38px);
     width: min(calc(100% - 2 * var(--gutter)), calc(30vh * var(--cam-ar)));
@@ -2098,6 +2105,7 @@ button {
     transform: translateX(-50%);
   }
 
+  #app[data-screen='forge'] .sensei,
   #app[data-screen='dojo'] .sensei {
     top: calc(var(--gutter) + 44px + min(100vw - 2 * var(--gutter), 30vh * var(--cam-ar)) / var(--cam-ar));
   }
@@ -2666,4 +2674,81 @@ button {
   #screen-menu .records {
     display: none;
   }
+}
+
+
+/* ---------- кузница печатей ---------- */
+
+.forge-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin: 0.4rem 0 0.8rem;
+}
+
+.forge-pair[hidden] {
+  display: none;
+}
+
+.forge-pair figure {
+  margin: 0;
+  text-align: center;
+}
+
+.forge-pair canvas {
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+  background: #efe6cf;
+  box-shadow: 0 0 0 1px rgba(42, 31, 26, 0.18) inset;
+}
+
+.forge-pair figcaption {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.forge-pass {
+  left: 80%;
+}
+
+.forge .lesson-done {
+  display: grid;
+  gap: 8px;
+}
+
+.forge .lesson-done[hidden] {
+  display: none;
+}
+
+.forge .choice {
+  background: rgba(31, 34, 80, 0.92);
+  color: var(--paper);
+}
+
+.forge-btns {
+  position: absolute;
+  right: var(--gutter);
+  bottom: var(--gutter);
+  display: flex;
+  gap: 8px;
+}
+
+.forge-btns .btn-ghost {
+  position: static;
+}
+
+.new-tag {
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--seal);
+  color: var(--paper);
+  font-style: normal;
+  font-size: 0.7rem;
+  vertical-align: middle;
+}
+
+#forge-dots li {
+  font-size: 15px;
 }

@@ -13,6 +13,7 @@ export const menu = {
       snake: () => go('dojo'),
       tiger: () => startStory(),
       bird: () => startStory({ quick: true }),
+      dog: () => go('forge'),
     });
     this.choice.reset();
     sensei.clear();

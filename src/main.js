@@ -16,6 +16,7 @@ import { scene, sceneLog } from './screens/scene.js';
 import { fight } from './screens/fight.js';
 import { results } from './screens/results.js';
 import { chest } from './screens/chest.js';
+import { forge, forgeDebug } from './screens/forge.js';
 
 fillSealIcons();
 
@@ -93,7 +94,10 @@ addEventListener('pointerdown', unlockAudio, { once: true });
 // Запасное управление с клавиатуры: 1–3 — пункты меню и итогов, пробел/Enter — следующая реплика.
 addEventListener('keydown', (e) => {
   const screen = app.dataset.screen;
-  if ((screen === 'menu' || screen === 'results') && /^[1-3]$/.test(e.key)) {
+  if (screen === 'forge' && (e.key === 'Escape' || e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К')) {
+    if (e.key === 'Escape') go('menu');
+    else forge.restart();
+  } else if ((screen === 'menu' || screen === 'results') && /^[1-4]$/.test(e.key)) {
     const buttons = [...$(`screen-${screen}`).querySelectorAll('[data-choice]')];
     buttons[Number(e.key) - 1]?.click();
   } else if (screen === 'chest' && (e.key === ' ' || e.key === 'Enter')) {
@@ -210,4 +214,7 @@ window.__shinobi = {
   sfx,
   voiceLog,
   sceneLog,
+  get forge() {
+    return forgeDebug();
+  },
 };
