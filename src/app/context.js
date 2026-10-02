@@ -18,8 +18,8 @@ export const brightness = new BrightnessMeter();
 export const recorder = new FrameRecorder({ height: 270, max: 60 });
 
 /** Запомнить текущий кадр как момент для главы манги. */
-export function moment(opts) {
-  addMoment(state.run, recorder.still(), opts);
+export function moment(opts, still = recorder.still()) {
+  addMoment(state.run, still, opts);
 }
 
 /** Общее состояние кадра и похода: его читают все экраны, пишет главный цикл (main.js) и сюжет (story.js). */

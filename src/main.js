@@ -5,12 +5,11 @@ import { buildHands, FINGER_NAMES } from './geometry.js';
 import { SEALS, classify } from './seals.js';
 import { TECHNIQUES } from './battle.js';
 import { startCamera, createHandTracker, CameraError, prefetchRecognition, stopProgress } from './tracker.js';
-import { sfx, unlockAudio, setSound, isSoundOn, loadAudioManifest, audioGraph, voiceLog } from './audio.js';
+import { sfx, unlockAudio, loadAudioManifest, audioGraph, voiceLog } from './audio.js';
 import { music } from './music.js';
 import { $, fillSealIcons } from './ui.js';
-import { backIcon, okOneIcon } from './icons.js';
-import { isOkSign } from './fingers.js';
 import { app, video, arena, overlay, sensei, brightness, state, go, pct, SHORT, recorder } from './app/context.js';
+import { updateBackGesture, updateSoundHint } from './app/controls.js';
 import { HandSmoother } from './herohands.js';
 import { startStory } from './app/story.js';
 import { menu } from './screens/menu.js';
@@ -33,7 +32,10 @@ const debugBox = $('debug');
 
 // ---------- запуск ----------
 
+let booting = false;
 async function boot() {
+  if (booting) return;
+  booting = true;
   const btn = $('btn-start');
   const status = $('intro-status');
   btn.disabled = true;
@@ -52,6 +54,7 @@ async function boot() {
     $('error-text').textContent =
       err instanceof CameraError ? err.message : `Не удалось загрузить распознавание рук: ${err?.message ?? err}. Проверь интернет и обнови страницу.`;
     app.dataset.screen = 'error';
+    booting = false;
   } finally {
     btn.disabled = false;
   }
@@ -87,17 +90,8 @@ navigator.permissions
   })
   .catch(() => {});
 
-// Звук
-const soundBtn = $('btn-sound');
-soundBtn.addEventListener('click', () => {
-  unlockAudio();
-  setSound(!isSoundOn());
-  soundBtn.setAttribute('aria-pressed', String(isSoundOn()));
-});
-addEventListener('pointerdown', unlockAudio, { once: true });
-
 // Отладка: клавиша D или ?debug в адресе — показывает сырые признаки пальцев.
-// Запасное управление с клавиатуры: 1–3 — пункты меню и итогов, пробел/Enter — следующая реплика.
+// Запасное управление с клавиатуры: 1–5 — пункты меню и итогов, пробел/Enter — следующая реплика.
 addEventListener('keydown', (e) => {
   const screen = app.dataset.screen;
   if (e.key === 'Escape' && screen !== 'menu' && screen !== 'intro' && screen !== 'error') {
@@ -153,65 +147,6 @@ let detectGap = 0;
 let detectCost = 8;
 let lastStampMs = 1;
 
-// ---------- «Окей» двумя руками — в меню: навигация только руками с любого экрана ----------
-// Жест нарочно непривычный: так руки случайно не держат, и он не совпадает ни с одной печатью.
-const BACK_HOLD_MS = 1200;
-const backCue = $('back-cue');
-const backRing = $('back-ring');
-$('back-icon').innerHTML = backIcon({ size: 38 });
-let backSince = 0;
-let oneSince = 0;
-let oneArmed = false;
-for (const icon of document.querySelectorAll('[data-cue-icon]')) icon.innerHTML = icon.dataset.cueIcon === 'one' ? okOneIcon({ size: 38 }) : backIcon({ size: 38 });
-// экраны, где внизу свои подсказки-жесты: «окей» одной рукой — действие экрана, двумя — в меню
-const CUE_SCREENS = ['forge', 'dojo'];
-
-function paintCue(screen, cue, p) {
-  const btn = document.querySelector(`#screen-${screen} [data-cue="${cue}"]`);
-  if (!btn) return;
-  btn.classList.toggle('active', p > 0);
-  btn.querySelector('.ring circle').style.strokeDashoffset = String(119.4 * (1 - p));
-}
-
-function updateBackGesture(now) {
-  const screen = app.dataset.screen;
-  // «окей» нельзя выковать в Кузнице, поэтому жест работает и во время записи
-  const allowed = !['intro', 'error', 'menu'].includes(screen);
-  const okBoth = allowed && state.hands.length === 2 && state.hands.every(isOkSign);
-  backSince = okBoth ? backSince || now : 0;
-  const p = backSince ? Math.min(1, (now - backSince) / BACK_HOLD_MS) : 0;
-  // на печати вдвоём в сцене тоже есть «пропустить» — «окей» одной рукой
-  const coopSkip = screen === 'scene' && scene.wait && !scene.wait.done && !$('scene-coop').hidden;
-  const cues = CUE_SCREENS.includes(screen) || coopSkip;
-  // подсказку видно всегда на спокойных экранах и только во время удержания — в бою и сценах
-  const calm = ['results', 'chapters', 'manga', 'path'].includes(screen);
-  backCue.hidden = !allowed || CUE_SCREENS.includes(screen) || (!calm && !p);
-  backCue.classList.toggle('active', p > 0);
-  backCue.classList.toggle('dim', p === 0);
-  backRing.style.strokeDashoffset = String(119.4 * (1 - p));
-  if (cues) paintCue(screen, 'both', p);
-
-  // «окей» одной рукой — действие экрана (записать заново / пропустить урок); после срабатывания
-  // ждём, пока руку опустят, чтобы не повторялось
-  const okOne = cues && state.hands.length === 1 && isOkSign(state.hands[0]);
-  if (!okOne) oneArmed = true;
-  oneSince = okOne && oneArmed ? oneSince || now : 0;
-  const q = oneSince ? Math.min(1, (now - oneSince) / BACK_HOLD_MS) : 0;
-  if (cues) paintCue(screen, 'one', q);
-  if (q >= 1) {
-    oneSince = 0;
-    oneArmed = false;
-    sfx.success();
-    document.querySelector(`#screen-${screen} [data-cue="one"]`)?.click();
-  }
-
-  if (p >= 1) {
-    backSince = 0;
-    sfx.success();
-    go('menu');
-  }
-}
-
 let recordedStamp = -1;
 const heroSmoother = new HandSmoother();
 
@@ -262,12 +197,13 @@ function loop(now) {
   arena.heroHands = heroOn
     ? {
         hands: heroSmoother.update(state.hands),
-        glow: controller.overlayTone === 'pass' ? 'rgba(240, 182, 74, 0.95)' : null,
+        glow: controller.overlayTone === 'pass' && arena.quality > 0 ? 'rgba(240, 182, 74, 0.95)' : null,
         place: controller === scene ? 'scene' : 'battle',
       }
     : null;
 
   const trail = controller === fight || controller === dojo ? controller.circle?.points : null;
+  overlay.quality = arena.quality; // на слабом ноутбуке искр меньше и без размытий
   overlay.draw(state.hands, {
     tone: controller?.overlayTone ?? 'idle',
     bad: controller?.overlayBad ?? null,
@@ -278,6 +214,7 @@ function loop(now) {
   });
 
   sensei.update(now);
+  updateSoundHint(now);
   arena.frame(dt);
   renderDebug();
   requestAnimationFrame(loop);

@@ -62,6 +62,7 @@ export const forge = {
     this.lastRender = 0;
     this.lastLive = 0;
     this.overlayBad = null;
+    this.overlayGuide = null; // рука-призрак прошлой печати не должна висеть над новой записью
     this.choice?.reset();
     $('forge-done').hidden = true;
     $('forge-pair').hidden = true;

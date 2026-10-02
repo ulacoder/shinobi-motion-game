@@ -18,6 +18,7 @@ export const chest = {
     this.hits = 0;
     this.need = 3;
     this.doneAt = 0;
+    $('chest-reward').hidden = true;
     this.detector.reset();
     arena.setPlace(step.place);
     arena.showEnemy(null);
@@ -60,6 +61,7 @@ export const chest = {
     if (!state.run.unlocked.includes(this.step.reward)) state.run.unlocked.push(this.step.reward);
     const r = this.reward;
     setTimeout(() => {
+      if (state.controller !== this) return; // ушли с экрана (жест «в меню») — награду не показываем
       cutin(r.tech);
       $('chest-reward-kanji').textContent = r.tech.glyph;
       $('chest-reward-name').textContent = r.tech.name;

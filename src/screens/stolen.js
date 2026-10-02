@@ -74,16 +74,18 @@ export const stolen = {
       $('steal-hanko').textContent = '返';
       b.forgedAt = -Infinity; // перезарядка не мешает вернуть печать
       const tech = { ...this.forged.tech, damage: 30 };
-      const events = [...b.onForged(tech, accuracy, now), ...b.stunFoe(2600, now)];
+      const cast = b.onForged(tech, accuracy, now);
+      // если возвращённая печать добила Кагэро — не оглушаем уже поверженного
+      const events = b.over ? cast : [...cast, ...b.stunFoe(2600, now)];
       const form = snapshotHands(state.hands);
       for (const e of events) if (e.type === 'cast') e.forms = [form];
       box.classList.add('won');
       box.querySelector('.steal-title').textContent = 'Печать возвращена!';
-      $('steal-sub').textContent = 'Кагэро оглушён своей же жадностью';
+      $('steal-sub').textContent = b.over ? 'Кагэро повержен своей же жадностью' : 'Кагэро оглушён своей же жадностью';
       arena.label('返!', '#6fd08c');
       moment({ caption: 'Это моя печать. Верни!', sfx: '返!', priority: 5, kanji: '返' });
       this.handle(events, now);
-      sensei.show('Печать возвращена! Кагэро оглушён — бей!', 'good', now, { lock: 2000, ttl: 3000 });
+      if (!b.over) sensei.show('Печать возвращена! Кагэро оглушён — бей!', 'good', now, { lock: 2000, ttl: 3000 });
     } else {
       const events = b.stolenHit(22, now);
       box.querySelector('.steal-title').textContent = 'Украдено!';
@@ -91,7 +93,7 @@ export const stolen = {
       const hint = 'Кагэро украл печать: повтори её сразу, как только увидишь красные руки';
       b.noteMistake(hint, now);
       this.handle(events, now);
-      sensei.show(hint, 'warn', now, { lock: 2200, ttl: 3500 });
+      if (!b.over) sensei.show(hint, 'warn', now, { lock: 2200, ttl: 3500 });
     }
     setTimeout(() => (box.hidden = true), 1400);
   },

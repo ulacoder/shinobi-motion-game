@@ -3535,3 +3535,212 @@ button {
   grid-column: 1 / -1;
   justify-self: start;
 }
+
+/* браузер не даёт играть звук без клика: подсказка у кнопки звука */
+.sound-hint {
+  position: absolute;
+  top: calc(var(--gutter) * 0.6);
+  right: calc(var(--gutter) * 0.6 + 48px);
+  z-index: 45;
+  max-width: min(340px, 60vw);
+  padding: 7px 12px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.9rem;
+  text-align: left;
+  box-shadow: 4px 4px 0 var(--seal);
+  cursor: pointer;
+  animation: panel-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.sound-hint[hidden] {
+  display: none;
+}
+
+/* =====================================================================
+   Правки по прогону на ноутбуке (1280×720 — окно при демонстрации в Meet) и телефоне
+   ===================================================================== */
+
+/* кража печати: длинный заголовок не вылезает из панели */
+.steal {
+  width: min(580px, 90vw);
+}
+
+.steal-title {
+  font-size: clamp(1.2rem, 2.4vw, 1.9rem);
+  text-align: center;
+}
+
+/* свиток пути: камера справа сверху, свиток — левее неё, а не под ней */
+@media (min-width: 821px) and (min-aspect-ratio: 1/1) {
+  .path-scroll {
+    left: var(--gutter);
+    transform: translateY(-50%);
+    width: min(1100px, calc(100vw - min(18vw, 260px) - 3 * var(--gutter)));
+  }
+}
+
+/* невысокий ноутбук: свиток пути компактнее, кнопки внизу помещаются */
+@media (min-width: 821px) and (max-height: 820px) {
+  .path-scroll {
+    gap: 8px;
+    padding-top: 14px;
+    padding-bottom: 14px;
+  }
+  .path-head .hanko-lg {
+    width: 56px;
+    height: 56px;
+    font-size: 34px;
+  }
+  .path-head h2 {
+    font-size: 1.8rem;
+  }
+  .path-fix {
+    padding: 10px 12px;
+    gap: 3px;
+  }
+  .path-nums b {
+    font-size: 1.2rem;
+  }
+  .path-new {
+    gap: 4px 16px;
+  }
+  .path-new-item span:last-child {
+    font-size: 0.8rem;
+  }
+  .path-choices .choice {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+}
+
+/* замедленный повтор не выше экрана */
+.replay-frame canvas {
+  max-height: calc(100vh - 210px);
+  object-fit: contain;
+}
+
+@media (max-width: 820px), (max-aspect-ratio: 1/1) {
+  /* додзё и Кузница: подсказки «окей» — полосой внизу, панель урока над ними */
+  .forge-btns {
+    left: var(--gutter);
+    right: var(--gutter);
+    bottom: calc(var(--gutter) * 0.5);
+  }
+  .forge-btns .hand-cue {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 36px 4px 4px;
+  }
+  .hand-cue .choice-icon-sm {
+    flex: none;
+  }
+  .hand-cue-text b {
+    font-size: 0.8rem;
+  }
+  .hand-cue-text span {
+    font-size: 0.7rem;
+  }
+  .hand-cue .ring {
+    width: 24px;
+    height: 24px;
+    right: 6px;
+  }
+  #screen-forge .lesson,
+  #screen-dojo .lesson {
+    bottom: calc(var(--gutter) * 0.5 + 62px);
+  }
+
+  /* итоги: три кнопки помещаются в ширину телефона */
+  .choices-row .choice {
+    min-width: 0;
+    padding: 6px 28px 6px 6px;
+    gap: 6px;
+  }
+  .choices-row .choice-text strong {
+    font-size: 0.82rem;
+  }
+  .choices-row .ring {
+    width: 24px;
+    height: 24px;
+    right: 4px;
+  }
+
+  /* свиток пути на телефоне: под камерой */
+  #app[data-screen='path'] .cam {
+    width: 34vw;
+  }
+  .path-scroll {
+    top: calc(var(--gutter) + 34vw / var(--cam-ar) + 16px);
+    transform: translateX(-50%);
+    max-height: calc(100vh - 34vw / var(--cam-ar) - 2 * var(--gutter) - 20px);
+  }
+
+  /* глава манги на телефоне: камера в углу, кнопки можно докрутить выше неё */
+  #app[data-screen='manga'] .cam {
+    width: 32vw;
+  }
+  #screen-manga {
+    padding-bottom: calc(32vw / var(--cam-ar) + 2 * var(--gutter));
+  }
+}
+
+/* телефон горизонтально и очень низкие окна */
+@media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+  #screen-menu .choices {
+    max-height: calc(100vh - 110px);
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  #screen-menu .choice {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  #screen-menu .records {
+    display: none;
+  }
+  .techs {
+    top: var(--gutter);
+    bottom: var(--gutter);
+    transform: none;
+    max-height: none;
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .replay {
+    width: min(620px, 80vw);
+    padding: 8px 12px 10px;
+  }
+  .replay-frame canvas {
+    max-height: calc(100vh - 120px);
+  }
+  .replay-kicker {
+    display: none;
+  }
+  .scene-gesture-how,
+  .scene-gesture-text span {
+    display: none;
+  }
+  .bubble {
+    max-height: calc(100vh - 2 * var(--gutter));
+    overflow-y: auto;
+    scrollbar-width: none;
+  }
+  .manga-side .lesson-how {
+    display: none;
+  }
+  .steal {
+    top: 4%;
+  }
+  .steal canvas {
+    max-height: 36vh;
+    width: auto;
+  }
+  .scene-portrait {
+    max-height: 46vh;
+    width: auto;
+  }
+}

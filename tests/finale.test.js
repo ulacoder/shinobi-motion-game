@@ -20,7 +20,10 @@ test('печать дружбы: двое сцепили мизинцы — за
   const far = evaluateSeal('friend', hands([{ state: PINKY, cx: 0.2, cy: 0.45 }, { state: PINKY, cx: 0.8, cy: 0.45 }]));
   assert.equal(far.passed, false);
   assert.match(far.hint, /мизинц/);
-  assert.match(far.rules.find((r) => r.finger === 'pinky')?.hint ?? 'игрока', /игрока/);
+  assert.match(far.rules.find((r) => r.kind === 'finger')?.hint ?? '', /игрока/);
+  // сцепленные мизинцы сгибаются крючком — печать всё равно засчитывается
+  const HOOK = { ...PINKY, pinky: 'down' };
+  assert.ok(evaluateSeal('friend', hands([{ state: HOOK, cx: 0.47, cy: 0.45 }, { state: HOOK, cx: 0.53, cy: 0.45 }])).passed);
   // в бою печать дружбы не распознаётся: её нет среди боевых печатей
   assert.ok(!classify(hands(PAIR)).some((e) => e.seal === 'friend'));
 });

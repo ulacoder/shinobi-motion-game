@@ -26,20 +26,29 @@ export class FingerChoice {
     this.current = 0;
     this.since = 0;
     this.locked = false;
+    // как у выбора печатью: сначала ждём, пока опустят жест, с которым пришли на экран
+    // (иначе Тигр из меню, у которого опустили одну руку, сразу выбирает главу 2)
+    this.armed = false;
   }
 
   /** Возвращает { count, progress 0..1, chosen: число или null, hint }. */
   update(hands, now) {
-    if (hands.length !== 1) {
+    // «окей» — это жесты управления (в меню / действие экрана), а не «три пальца»
+    const ok = hands.length === 1 && isOkSign(hands[0]);
+    if (hands.length !== 1 || ok) {
       this.current = 0;
       this.since = 0;
       this.locked = false;
+      if (!hands.length) this.armed = true;
       return {
         count: 0,
         progress: 0,
         chosen: null,
-        hint: hands.length ? 'Покажи пальцы одной рукой — вторую опусти' : 'Подними одну руку и покажи 1, 2 или 3 пальца',
+        hint: ok ? null : hands.length ? 'Покажи пальцы одной рукой — вторую опусти' : 'Подними одну руку и покажи 1, 2 или 3 пальца',
       };
+    }
+    if (!this.armed) {
+      return { count: countFingers(hands[0]), progress: 0, chosen: null, hint: 'Опусти руки, потом покажи 1, 2 или 3 пальца' };
     }
     const count = countFingers(hands[0]);
     if (count !== this.current) {
@@ -47,15 +56,15 @@ export class FingerChoice {
       this.since = now;
       this.locked = false;
     }
-    const ok = this.allowed.includes(count);
-    const progress = ok && !this.locked ? Math.min(1, (now - this.since) / this.holdMs) : 0;
+    const allowedNow = this.allowed.includes(count);
+    const progress = allowedNow && !this.locked ? Math.min(1, (now - this.since) / this.holdMs) : 0;
     let chosen = null;
-    if (ok && !this.locked && progress >= 1) {
+    if (allowedNow && !this.locked && progress >= 1) {
       chosen = count;
       this.locked = true;
     }
     const word = count === 4 ? 'четыре пальца' : 'пять пальцев';
-    const hint = ok ? null : count === 0 ? 'Это кулак: подними 1, 2 или 3 пальца' : `Это ${word} — для глав нужно 1, 2 или 3`;
+    const hint = allowedNow ? null : count === 0 ? 'Это кулак: подними 1, 2 или 3 пальца' : `Это ${word} — для глав нужно 1, 2 или 3`;
     return { count, progress, chosen, hint };
   }
 }

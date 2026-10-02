@@ -79,9 +79,11 @@ export const SEALS = {
     kanji: '友',
     coop: true,
     how: 'Вдвоём: каждый даёт правую руку, мизинец вверх — сцепите мизинцы.',
+    // мизинец сам по себе не проверяем: сцепленный мизинец сгибается крючком, и его «выпрямленность» падает.
+    // Проверяем остальные пальцы (согнуты), что кончики мизинцев встретились и что руки от двух людей.
     roles: [
-      { label: 'мизинец', fingers: { thumb: null, index: DOWN, middle: DOWN, ring: DOWN, pinky: UP } },
-      { label: 'мизинец', fingers: { thumb: null, index: DOWN, middle: DOWN, ring: DOWN, pinky: UP } },
+      { label: 'мизинец', fingers: { thumb: null, index: DOWN, middle: DOWN, ring: DOWN, pinky: null } },
+      { label: 'мизинец', fingers: { thumb: null, index: DOWN, middle: DOWN, ring: DOWN, pinky: null } },
     ],
     relations: [{ type: 'pinkies', max: 1.1 }, { type: 'twoPlayers' }],
   },

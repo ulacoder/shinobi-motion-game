@@ -127,8 +127,9 @@ export const fight = {
           const id = e.tech.id;
           overlay.burst(e.tech.glyph, state.hands, '#ff8a3d');
           cutin(e.tech, e.forms ?? this.chainForms);
-          this.keepClip(e, now);
+          // сначала стоп-кадр для манги (текущий кадр), потом клип для повтора забирает последние секунды
           this.castMoment(e);
+          this.keepClip(e, now);
           this.chainForms = [];
           this.showCombo(e);
           if (id === 'fire') (arena.fireball(e.power), sfx.fire());
@@ -210,7 +211,14 @@ export const fight = {
           state.run.playerHp = b.playerHp;
           state.run.chakra = b.chakra;
           sensei.show(`${this.enemy.name} повержен!`, 'good', now, { lock: 2000, ttl: 2400 });
-          moment({ caption: `${this.enemy.name} повержен!`, sfx: 'ドーン!', priority: this.enemy.boss ? 5 : 3, kanji: this.clipInfo?.glyph ?? '勝' });
+          // кадр победы — последний кадр добивающего клипа (кольцо записи его уже отдало повтору)
+          moment(
+            { caption: `${this.enemy.name} повержен!`, sfx: 'ドーン!', priority: this.enemy.boss ? 5 : 3, kanji: this.clipInfo?.glyph ?? '勝' },
+            this.clip ? recorder.still(this.clip.frames.at(-1)) : undefined,
+          );
+          // если босс пал во время кражи печати — панель кражи убираем, повтор идёт поверх чистой сцены
+          this.steal = null;
+          $('steal').hidden = true;
           this.endAt = now + 2300;
           // замедленный повтор добивающей печати
           if (this.clip) {
@@ -336,7 +344,9 @@ export const fight = {
       }
     }
     const drawingMode = b.ultimateReady && state.hands.length === 1 && (isPointing(state.hands[0]) || this.circle.drawing);
-    if (drawingMode || (this.circle.drawing && b.ultimateReady)) {
+    // круг рисуют одной рукой: появилась вторая рука (например, складывают Собаку для щита) —
+    // рисование сразу отменяется и работают печати
+    if (drawingMode || (this.circle.drawing && b.ultimateReady && state.hands.length === 0)) {
       this.overlayTone = 'near';
       camSeal.hidden = true;
       const r = this.circle.update(state.hands, now);

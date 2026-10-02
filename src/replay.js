@@ -49,9 +49,9 @@ export class FrameRecorder {
     for (const f of clip?.frames ?? []) this.pool.push(f.canvas);
   }
 
-  /** Стоп-кадр для манги: копия последнего кадра и рук. */
-  still() {
-    const f = this.frames.at(-1);
+  /** Стоп-кадр для манги: копия последнего кадра (или переданного кадра клипа) и рук. */
+  still(frame = this.frames.at(-1)) {
+    const f = frame;
     if (!f) return null;
     const c = document.createElement('canvas');
     c.width = f.canvas.width;

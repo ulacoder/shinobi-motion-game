@@ -141,6 +141,24 @@ const FINGER_POINTS = {
   pinky: [17, 18, 19, 20],
 };
 
+// Спрайты искр: по одному на цвет (цвета округлены), рисуются один раз.
+const sparkSprites = new Map();
+function sparkSprite(r, g, b) {
+  const key = `${Math.round(r / 16)}|${Math.round(g / 16)}|${Math.round(b / 16)}`;
+  let c = sparkSprites.get(key);
+  if (c) return c;
+  c = document.createElement('canvas');
+  c.width = c.height = 32;
+  const x = c.getContext('2d');
+  const grad = x.createRadialGradient(16, 16, 0, 16, 16, 16);
+  grad.addColorStop(0, `rgba(${r | 0},${g | 0},${b | 0},1)`);
+  grad.addColorStop(1, `rgba(${r | 0},${g | 0},${b | 0},0)`);
+  x.fillStyle = grad;
+  x.fillRect(0, 0, 32, 32);
+  sparkSprites.set(key, c);
+  return c;
+}
+
 export class Overlay {
   constructor(canvas) {
     this.canvas = canvas;
@@ -250,7 +268,7 @@ export class Overlay {
     };
     if (trail && trail.length) {
       ctx.shadowColor = '#58d0ff';
-      ctx.shadowBlur = 16 * dpr;
+      ctx.shadowBlur = this.quality === 0 ? 0 : 16 * dpr;
       drawPath(trail, 'rgba(200,240,255,0.95)', 6);
       ctx.shadowBlur = 0;
     }
@@ -271,7 +289,9 @@ export class Overlay {
     this.sparks ??= [];
     const palette = { idle: [88, 208, 255], near: [240, 182, 74], pass: [111, 208, 140] };
     const [r, g, b] = palette[tone] ?? palette.idle;
-    if (this.sparks.length < 160 && now - (this.sparkAt ?? 0) > 30) {
+    // число искр зависит от качества графики (Overlay.quality ставит главный цикл по замеру FPS)
+    const cap = [50, 100, 160][this.quality ?? 2];
+    if (this.sparks.length < cap && now - (this.sparkAt ?? 0) > 30) {
       this.sparkAt = now;
       for (const hand of hands) {
         for (const i of [4, 8, 12, 16, 20]) {
@@ -304,13 +324,9 @@ export class Overlay {
       alive.push(s);
       const q = px(s);
       const rad = (2 + 5 * s.life) * s.size * k;
-      const grad = ctx.createRadialGradient(q.x, q.y, 0, q.x, q.y, rad);
-      grad.addColorStop(0, `rgba(${s.r},${s.g},${s.b},${0.9 * s.life})`);
-      grad.addColorStop(1, `rgba(${s.r},${s.g},${s.b},0)`);
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(q.x, q.y, rad, 0, Math.PI * 2);
-      ctx.fill();
+      // готовый спрайт-свечение вместо градиента на каждую искру в каждом кадре
+      ctx.globalAlpha = 0.9 * s.life;
+      ctx.drawImage(sparkSprite(s.r, s.g, s.b), q.x - rad, q.y - rad, rad * 2, rad * 2);
     }
     this.sparks = alive;
     ctx.restore();
@@ -356,7 +372,7 @@ export class Overlay {
       ctx.strokeText(b.kanji, x, y);
       ctx.fillStyle = b.color;
       ctx.shadowColor = b.color;
-      ctx.shadowBlur = 24 * k;
+      ctx.shadowBlur = this.quality === 0 ? 0 : 24 * k;
       ctx.fillText(b.kanji, x, y);
       ctx.restore();
     }
@@ -383,11 +399,11 @@ export class Overlay {
         ctx.lineTo(g[b].x, g[b].y);
         ctx.stroke();
       }
-      // пальцы, которые надо исправить, — зелёные и пульсируют; стрелка от живого кончика к нужному
+      // пальцы, которые надо исправить, — золотые и пульсируют; стрелка от живого кончика к нужному
       ctx.globalAlpha = pulse;
       ctx.strokeStyle = '#f0b64a';
       ctx.shadowColor = '#cc3325';
-      ctx.shadowBlur = 14 * k;
+      ctx.shadowBlur = this.quality === 0 ? 0 : 14 * k;
       for (const finger of Object.keys(wants)) {
         const idx = FINGER_POINTS[finger];
         ctx.lineWidth = 10 * k;

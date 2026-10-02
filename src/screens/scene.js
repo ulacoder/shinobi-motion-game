@@ -116,6 +116,7 @@ export const scene = {
       this.lineDur = Infinity;
       // печать на двоих: два места — «Игрок 1» и «Игрок 2»
       $('scene-coop').hidden = !s.coop;
+      this.coopMode = null;
       if (s.coop) this.paintCoop('none');
     }
     const portrait = $('scene-portrait');
@@ -128,7 +129,7 @@ export const scene = {
   skip(now) {
     if (!this.line) return;
     // жест ещё не сложен: клик или пробел засчитывают его (запасной путь для показа)
-    if (this.wait && !this.wait.done) return SEALS[this.wait.seal].coop ? this.skipCoop(now) : this.gestureDone(now, 1);
+    if (this.wait && !this.wait.done) return SEALS[this.wait.seal].coop ? this.skipCoop(now) : this.gestureDone(now, null);
     const typed = Math.floor((now - this.lineStart) / 28);
     if (typed < this.line.text.length) this.lineStart = now - this.line.text.length * 28;
     else this.showLine(now);
@@ -249,8 +250,8 @@ Object.assign(scene, {
       overlay.burst('友', state.hands, '#f0b64a');
       sfx.win();
     }
-    // момент для главы манги
-    moment({
+    // момент для главы манги (пропущенный жест в мангу не попадает)
+    if (accuracy !== null) moment({
       who: 'Улагат',
       caption: fx === 'friend' ? 'Печать дружбы — вместе!' : `${SEALS[w.seal].name}!`,
       sfx: fx === 'friend' ? 'ギュッ!' : fx === 'fire' ? 'ゴォッ!' : fx === 'shield' ? 'キィン!' : 'パッ!',
@@ -258,8 +259,13 @@ Object.assign(scene, {
       priority: fx === 'friend' ? 4 : 1,
       once: `g-${w.seal}`,
     });
+    // accuracy = null — жест пропущен кликом или пробелом: не выдумываем «100%»
     sensei.show(
-      fx === 'friend' ? `Печать дружбы! Вы сложили её вдвоём — совпадение ${pct(accuracy)}` : `Отлично! ${SEALS[w.seal].name}: совпадение ${pct(accuracy)}`,
+      accuracy === null
+        ? `${SEALS[w.seal].name}: пропущено — история идёт дальше`
+        : fx === 'friend'
+          ? `Печать дружбы! Вы сложили её вдвоём — совпадение ${pct(accuracy)}`
+          : `Отлично! ${SEALS[w.seal].name}: совпадение ${pct(accuracy)}`,
       'good',
       now,
       { lock: 1100 },

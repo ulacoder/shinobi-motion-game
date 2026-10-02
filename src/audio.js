@@ -110,6 +110,11 @@ export function unlockAudio() {
   if (ctx.state === 'suspended') ctx.resume();
 }
 
+/** Браузер ещё не разрешил звук (нужен клик или клавиша на странице). */
+export function audioLocked() {
+  return !ctx || ctx.state !== 'running';
+}
+
 export function setSound(on) {
   enabled = on;
   if (ctx && master) master.gain.setTargetAtTime(on ? MASTER_GAIN : 0, ctx.currentTime, 0.05);
