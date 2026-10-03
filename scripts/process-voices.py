@@ -24,7 +24,19 @@ ROLE = {
     's5_1': 'boss', 'end_1': 'boss',
     'cast_fire': 'cast', 'cast_lightning': 'cast', 'cast_shield': 'cast', 'cast_sphere': 'cast',
     'hero_hurt': 'hurt', 'combo': 'cast',
+    'cast_wind': 'cast', 'cast_dragon': 'cast', 'cast_forged': 'cast',
+    # финал: новые реплики сенсея и Кагэро
+    'g_ready': 'sensei', 'f_1': 'sensei', 'f_2': 'sensei',
+    'f_3': 'boss',
 }
+
+
+def _role_by_prefix(line_id: str):
+    if line_id.startswith(('se_', 'h_')):
+        return 'sensei'
+    if line_id.startswith('k_'):
+        return 'boss'
+    return None
 
 # Базовая чистка: срез низа, шумодав, компрессор. Тишину режем отдельно (см. gate_trim).
 CLEAN = ','.join([
@@ -114,7 +126,7 @@ def write_wav(path: Path, x):
 
 
 def role_of(line_id: str) -> str:
-    return ROLE.get(line_id, 'hero')
+    return ROLE.get(line_id) or _role_by_prefix(line_id) or 'hero'
 
 
 def run(args):

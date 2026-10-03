@@ -27,5 +27,11 @@
  "audio_2026-09-29_20-42-48.ogg": "end_1",
  "audio_2026-09-29_20-42-52.ogg": "s5_2",
  "audio_2026-09-29_20-42-56.ogg": "end_3",
- "zamena_s3_1.ogg": "s3_1"
+ "zamena_s3_1.ogg": "s3_1",
+ "audio_2026-10-04_01-22-41.ogg": "f_4",
+ "audio_2026-10-04_01-23-01.ogg": "cast_wind",
+ "audio_2026-10-04_01-23-10.ogg": "cast_dragon",
+ "audio_2026-10-04_01-23-18.ogg": "cast_forged",
+ "audio_2026-10-04_01-23-39.ogg": "u_return",
+ "audio_2026-10-04_01-23-59.ogg": "u_read_won"
 }

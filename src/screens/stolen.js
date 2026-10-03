@@ -1,7 +1,7 @@
 // Своя печать из Кузницы в бою и кража печати Кагэро (фаза ярости босса).
 // Методы подмешиваются в экран боя (src/screens/fight.js).
 
-import { sfx } from '../audio.js';
+import { sfx, playVoice } from '../audio.js';
 import { $, snapshotHands, drawHandForm } from '../ui.js';
 import { arena, sensei, state, camSeal, moment } from '../app/context.js';
 import { evaluateTemplate } from '../forge.js';
@@ -85,6 +85,8 @@ export const stolen = {
       arena.label('返!', '#6fd08c');
       moment({ caption: 'Это моя печать. Верни!', sfx: '返!', priority: 5, kanji: '返' });
       this.handle(events, now);
+      // после каста: реплика героя заменяет обычный выкрик своей печати
+      playVoice('u_return');
       if (!b.over) sensei.show('Печать возвращена! Кагэро оглушён — бей!', 'good', now, { lock: 2000, ttl: 3000 });
     } else {
       const events = b.stolenHit(22, now);

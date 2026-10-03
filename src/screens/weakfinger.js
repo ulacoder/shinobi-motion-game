@@ -3,7 +3,7 @@
 // где этот палец важен, и удержи его ровно. Методы подмешиваются в экран боя (src/screens/fight.js).
 
 import { SEALS, evaluateSeal } from '../seals.js';
-import { sfx } from '../audio.js';
+import { sfx, playVoice } from '../audio.js';
 import { $ } from '../ui.js';
 import { sealPalmsIcon } from '../icons.js';
 import { arena, sensei, state, setWidth, pct, moment, badFingers } from '../app/context.js';
@@ -91,6 +91,7 @@ export const weakfinger = {
       sfx.success();
       arena.label('読破!', '#6fd08c');
       moment({ caption: 'Мой палец не дрогнет!', sfx: 'ピタッ!', priority: 4, kanji: '破', once: 'read-won' });
+      playVoice('u_read_won');
       sensei.show(`Отлично! ${finger} палец не дрогнул — Кагэро оглушён, +30% чакры`, 'good', now, { lock: 2000, ttl: 3000 });
     } else {
       box.classList.add('lost');
