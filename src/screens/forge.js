@@ -227,17 +227,17 @@ export const forge = {
     if (this.story && state.run) state.run.forged = forged; // в сюжете печать принадлежит этому походу
     sfx.win();
     $('forge-kicker').textContent = 'Печать выкована';
-    $('forge-how').textContent = `${this.seal.name}: ${REPEATS} точных повтора, среднее совпадение ${pct(avg)}. Игра выучила твой жест по 5 снимкам — без нейросети, по углам суставов.`;
+    $('forge-how').textContent = `${this.seal.name}: ${REPEATS} точных повтора, среднее совпадение ${pct(avg)}. Игра выучила твой жест по 5 снимкам — без нейросети, по углам суставов. Теперь это твоя техника в бою — и Кагэро попробует её украсть!`;
     $('forge-checks').replaceChildren();
     if (this.story) {
       // в сюжете — сразу дальше, к Кагэро
       this.nextAt = now + 3200;
-      sensei.show(`${this.seal.name} — теперь твоя техника. Покажи её в бою с Кагэро!`, 'good', now, { lock: 3000, ttl: 3500 });
+      sensei.show(`${this.seal.name} — теперь твоя техника. Береги её: Кагэро захочет её украсть!`, 'good', now, { lock: 3000, ttl: 3500 });
       return;
     }
     $('forge-done').hidden = false;
     this.choice.reset();
-    sensei.show('Готово! Птица — в бой с этой печатью. Змея — меню. Тигр — выковать ещё', 'good', now, { lock: 2000, ttl: 4500 });
+    sensei.show('Готово! Птица — в бой: Кагэро попробует украсть эту печать. Тигр — выковать ещё', 'good', now, { lock: 2000, ttl: 4500 });
   },
 
   setMeter(acc, pass) {

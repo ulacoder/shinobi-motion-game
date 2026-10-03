@@ -450,7 +450,7 @@ const sealHanko = (id, cls = '') => {
 
 export function renderTechList(
   ul,
-  { chain = [], ultimateReady = false, showUltimate = true, showDesc = false, techs = Object.values(TECHNIQUES), dragon = false, forged = null } = {},
+  { chain = [], ultimateReady = false, showUltimate = true, showDesc = false, techs = Object.values(TECHNIQUES), dragon = false, forged = null, teaser = false } = {},
 ) {
   ul.replaceChildren();
   ul.classList.toggle('many', techs.length + (forged ? 1 : 0) + (showUltimate ? 1 + (dragon ? 1 : 0) : 0) > 4);
@@ -482,8 +482,16 @@ export function renderTechList(
     const glyph = el('span', 'tech-glyph');
     glyph.append(el('span', 'hanko', forged.kanji));
     li.append(glyph, el('span', 'tech-name', forged.name));
-    li.append(el('span', 'tech-seq', 'Своя печать из Кузницы: покажи свой жест'));
+    li.append(el('span', 'tech-seq', 'Твой жест из Кузницы. Береги — Кагэро захочет его украсть!'));
     if (showDesc) li.append(el('span', 'tech-desc', 'Выкована в Кузнице'));
+    ul.append(li);
+  } else if (teaser) {
+    // своей печати ещё нет — напоминаем, что её можно выковать (и что Кагэро её украдёт)
+    const li = el('li', 'tech forged locked');
+    const glyph = el('span', 'tech-glyph');
+    glyph.append(el('span', 'hanko', '鍛'));
+    li.append(glyph, el('span', 'tech-name', 'Своя печать'));
+    li.append(el('span', 'tech-seq', 'Выкуй любой жест в Кузнице — и Кагэро попробует его украсть'));
     ul.append(li);
   }
   if (showUltimate) {

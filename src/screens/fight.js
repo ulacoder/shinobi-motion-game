@@ -31,7 +31,7 @@ export const fight = {
   techOpts(extra) {
     const techs = [...Object.values(TECHNIQUES), ...state.run.unlocked.filter((id) => EXTRA_TECHNIQUES[id]).map((id) => EXTRA_TECHNIQUES[id])];
     const forged = this.forged ? { name: this.forged.tech.name, kanji: this.forged.tech.glyph } : null;
-    return { techs, dragon: state.run.unlocked.includes('dragon'), forged, ...extra };
+    return { techs, dragon: state.run.unlocked.includes('dragon'), forged, teaser: !forged, ...extra };
   },
 
   enter(step) {
@@ -319,6 +319,10 @@ export const fight = {
           unlocked: state.run.unlocked,
         });
         setTimeout(() => ($('countdown').hidden = true), 400);
+        // своя печать в бою с боссом: сразу предупреждаем, что Кагэро на неё охотится
+        if (this.enemy.boss && this.forged) {
+          sensei.show(`Кагэро чует твою печать «${this.forged.tech.name}». В ярости он попробует её украсть — повтори её первым!`, 'warn', now, { lock: 2500, ttl: 4500 });
+        }
       }
       return;
     }

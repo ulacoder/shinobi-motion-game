@@ -4135,3 +4135,37 @@ button {
     display: none;
   }
 }
+
+/* Кузница в меню: своя печать — вторая по заметности кнопка */
+.choice.choice-forge {
+  margin-top: 10px;
+  box-shadow: 0 0 0 2px #f0b64a inset;
+  background: linear-gradient(120deg, rgba(31, 34, 80, 0.92), rgba(90, 30, 40, 0.92));
+}
+
+.forge-tag {
+  position: absolute;
+  left: 12px;
+  top: -11px;
+  padding: 2px 9px;
+  border-radius: 6px;
+  background: #1a1320;
+  color: #f0b64a;
+  border: 1.5px solid #f0b64a;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* своей печати ещё нет — приглушённая строка-приглашение в списке техник */
+.tech.forged.locked {
+  opacity: 0.75;
+  border: 1.5px dashed rgba(204, 51, 37, 0.6);
+  border-radius: 8px;
+}
+
+.tech.forged.locked .hanko {
+  filter: grayscale(0.4);
+}
