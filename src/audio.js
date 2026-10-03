@@ -293,8 +293,11 @@ function crackle(dur, density = 40, gain = 0.25) {
 
 /** Раскат грома: низкий бурый шум с «волнами» громкости. */
 function rumble(delay = 0, dur = 2.2, gain = 0.8) {
-  for (let i = 0; i < 4; i++) {
-    noise({ dur: dur * (0.5 + Math.random() * 0.5), gain: gain * (0.6 + Math.random() * 0.4), from: 180, to: 60, type: 'lowpass', color: 'brown', delay: delay + i * 0.18 + Math.random() * 0.1, attack: 0.05 });
+  // несколько «волн» раската с разной высотой: гром перекатывается, а не гудит ровно
+  const n = Math.max(4, Math.round(dur * 2.2));
+  for (let i = 0; i < n; i++) {
+    const k = i / n;
+    noise({ dur: dur * (0.35 + Math.random() * 0.4), gain: gain * (1 - k * 0.6) * (0.6 + Math.random() * 0.4), from: 260 - k * 80, to: 45, type: 'lowpass', color: 'brown', delay: delay + k * dur * 0.6 + Math.random() * 0.12, attack: 0.04 + Math.random() * 0.1 });
   }
 }
 
@@ -312,24 +315,50 @@ const synth = {
   hint: () => tone({ freq: 240, type: 'triangle', dur: 0.2, gain: 0.12, slide: -60 }),
   cast: () => whoosh(0, 0.4, 0.4),
   fire: () => {
-    whoosh(0, 0.3, 0.4);
-    noise({ dur: 1.1, gain: 0.7, from: 900, to: 150, type: 'lowpass', color: 'brown', attack: 0.15 });
-    noise({ dur: 0.9, gain: 0.3, from: 1800, to: 500, type: 'bandpass', attack: 0.1 });
-    crackle(1.0, 45, 0.3);
-    tone({ freq: 90, type: 'sine', dur: 0.6, gain: 0.35, slide: -40, delay: 0.5 });
+    whoosh(0, 0.3, 0.45);
+    noise({ dur: 0.6, gain: 0.6, from: 900, to: 300, type: 'lowpass', color: 'brown', attack: 0.1 });
+    crackle(0.55, 45, 0.3);
+    // взрыв при попадании
+    const t = 0.55;
+    noise({ dur: 0.12, gain: 1.0, from: 4000, to: 800, type: 'bandpass', q: 0.8, delay: t, attack: 0.001 });
+    noise({ dur: 1.6, gain: 1.2, from: 1600, to: 50, type: 'lowpass', color: 'brown', delay: t, attack: 0.003 });
+    tone({ freq: 70, type: 'sine', dur: 1.1, gain: 0.95, slide: -42, delay: t, attack: 0.004 });
+    tone({ freq: 38, type: 'sine', dur: 1.4, gain: 0.6, slide: -10, delay: t + 0.03 });
+    crackle(1.4, 40, 0.28);
+    rumble(t + 0.2, 1.6, 0.5);
   },
   lightning: () => {
-    // треск разряда → удар → раскат
-    noise({ dur: 0.35, gain: 0.3, from: 5000, to: 3000, type: 'highpass', delay: 0, attack: 0.2 });
-    noise({ dur: 0.12, gain: 1.0, from: 8000, to: 1200, type: 'highpass', delay: 0.35, attack: 0.002 });
-    noise({ dur: 0.25, gain: 0.9, from: 2500, to: 200, type: 'lowpass', delay: 0.36, attack: 0.002 });
-    tone({ freq: 60, type: 'sine', dur: 0.5, gain: 0.6, slide: -25, delay: 0.36 });
-    rumble(0.5, 2.4, 0.7);
+    // гудение тучи и треск набирающегося разряда
+    tone({ freq: 55, type: 'sawtooth', dur: 0.45, gain: 0.12, slide: 30, attack: 0.3 });
+    noise({ dur: 0.38, gain: 0.35, from: 6000, to: 3500, type: 'highpass', attack: 0.25 });
+    crackle(0.36, 50, 0.22);
+    // далёкая зарница
+    rumble(0.1, 0.9, 0.25);
+    // УДАР: сухой треск → рвущийся воздух → саб-удар в грудь
+    const t = 0.38;
+    noise({ dur: 0.07, gain: 1.4, from: 9000, to: 2500, type: 'highpass', delay: t, attack: 0.001 });
+    noise({ dur: 0.18, gain: 1.1, from: 5000, to: 900, type: 'bandpass', q: 0.6, delay: t + 0.01, attack: 0.002 });
+    noise({ dur: 0.55, gain: 1.2, from: 3200, to: 140, type: 'lowpass', delay: t + 0.02, attack: 0.002 });
+    tone({ freq: 62, type: 'sine', dur: 1.4, gain: 1.1, slide: -34, delay: t, attack: 0.004 });
+    tone({ freq: 41, type: 'sine', dur: 1.8, gain: 0.8, slide: -14, delay: t + 0.05, attack: 0.01 });
+    tone({ freq: 110, type: 'triangle', dur: 0.4, gain: 0.35, slide: -70, delay: t, attack: 0.002 });
+    // повторные удары стробоскопа
+    noise({ dur: 0.06, gain: 0.8, from: 8000, to: 2500, type: 'highpass', delay: t + 0.09, attack: 0.001 });
+    noise({ dur: 0.06, gain: 0.6, from: 8000, to: 2500, type: 'highpass', delay: t + 0.21, attack: 0.001 });
+    // долгий раскат грома, гуляющий волнами
+    rumble(t + 0.12, 3.6, 1.15);
+    rumble(t + 0.9, 2.8, 0.7);
+    // и дальний отголосок
+    rumble(1.6, 2.4, 0.45);
+    // ливень
+    noise({ dur: 2.6, gain: 0.18, from: 5000, to: 3000, type: 'bandpass', q: 0.4, delay: 0.1, attack: 0.4, color: 'pink' });
   },
   shield: () => {
     // всплеск воды + звон купола
-    noise({ dur: 0.5, gain: 0.45, from: 600, to: 2500, type: 'bandpass', q: 2, attack: 0.05 });
-    noise({ dur: 0.35, gain: 0.3, from: 3000, to: 900, type: 'bandpass', q: 4, delay: 0.1 });
+    noise({ dur: 0.5, gain: 0.55, from: 600, to: 2500, type: 'bandpass', q: 2, attack: 0.05 });
+    noise({ dur: 0.35, gain: 0.35, from: 3000, to: 900, type: 'bandpass', q: 4, delay: 0.1 });
+    noise({ dur: 0.9, gain: 0.3, from: 2500, to: 600, type: 'bandpass', q: 0.7, delay: 0.15, attack: 0.05, color: 'pink' });
+    for (let i = 0; i < 8; i++) tone({ freq: 700 + Math.random() * 900, type: 'sine', dur: 0.08, gain: 0.06, slide: 400, delay: 0.2 + Math.random() * 0.5 });
     [523, 784, 1046].forEach((f, i) => tone({ freq: f, type: 'sine', dur: 0.9, gain: 0.12, delay: 0.05 + i * 0.04 }));
   },
   sphere: () => {
@@ -338,7 +367,9 @@ const synth = {
     tone({ freq: 120, type: 'sawtooth', dur: 0.9, gain: 0.15, slide: 700, delay: t0, attack: 0.5 });
     noise({ dur: 0.9, gain: 0.5, from: 300, to: 4000, type: 'bandpass', q: 2, delay: t0, attack: 0.6 });
     noise({ dur: 1.2, gain: 1.0, from: 1500, to: 60, type: 'lowpass', color: 'brown', delay: 0.9, attack: 0.005 });
-    tone({ freq: 55, type: 'sine', dur: 1.0, gain: 0.7, slide: -25, delay: 0.9 });
+    tone({ freq: 55, type: 'sine', dur: 1.2, gain: 0.95, slide: -25, delay: 0.9 });
+    noise({ dur: 0.1, gain: 0.9, from: 6000, to: 1500, type: 'highpass', delay: 0.9, attack: 0.001 });
+    rumble(1.05, 1.8, 0.55);
     crackle(0.8, 30, 0.3);
   },
   hit: () => {
@@ -346,6 +377,10 @@ const synth = {
     tone({ freq: 80, type: 'sine', dur: 0.35, gain: 0.7, slide: -45 });
   },
   hurt: () => {
+    // трещина по стеклу экрана
+    noise({ dur: 0.05, gain: 0.9, from: 7000, to: 3500, type: 'highpass', attack: 0.001 });
+    crackle(0.18, 70, 0.4);
+    tone({ freq: 3100, type: 'sine', dur: 0.35, gain: 0.06, slide: -1200, delay: 0.02 });
     noise({ dur: 0.3, gain: 0.9, from: 900, to: 90, type: 'lowpass', attack: 0.002 });
     tone({ freq: 110, type: 'square', dur: 0.25, gain: 0.15, slide: -60 });
     tone({ freq: 60, type: 'sine', dur: 0.4, gain: 0.6, slide: -30 });
@@ -433,10 +468,16 @@ const synth = {
     noise({ dur: 1.4, gain: 0.25, from: 3000, to: 9000, type: 'bandpass', q: 2, delay: 0.25, attack: 0.3 });
   },
   wind: () => {
-    whoosh(0, 0.3, 0.5, true);
-    whoosh(0.16, 0.3, 0.5, true);
-    noise({ dur: 0.15, gain: 0.7, from: 6000, to: 2000, type: 'highpass', delay: 0.42, attack: 0.002 });
-    noise({ dur: 0.15, gain: 0.6, from: 6000, to: 2000, type: 'highpass', delay: 0.58, attack: 0.002 });
+    // порыв ветра нарастает
+    noise({ dur: 1.1, gain: 0.45, from: 300, to: 1400, type: 'bandpass', q: 0.8, attack: 0.35, color: 'pink' });
+    whoosh(0, 0.3, 0.55, true);
+    whoosh(0.16, 0.3, 0.55, true);
+    // два звонких разреза
+    for (const t of [0.42, 0.58]) {
+      noise({ dur: 0.16, gain: 0.9, from: 9000, to: 2500, type: 'highpass', delay: t, attack: 0.001 });
+      tone({ freq: 2400, type: 'sine', dur: 0.5, gain: 0.12, slide: -900, delay: t });
+      noise({ dur: 0.25, gain: 0.6, from: 900, to: 150, type: 'lowpass', delay: t + 0.01, attack: 0.002 });
+    }
   },
   dragon: () => {
     tone({ freq: 90, type: 'sawtooth', dur: 0.9, gain: 0.25, slide: -40, attack: 0.3 });

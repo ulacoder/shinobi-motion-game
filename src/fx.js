@@ -2,9 +2,12 @@
 // линии скорости, кадры удара, японские звуковые надписи, дым.
 
 import { drawCharacter } from './characters.js';
+import { drawKageroAura } from './kagero.js';
 import { drawHeroHands } from './herohands.js';
 import { effects } from './fx-effects.js';
 import { chestFx } from './fx-chest.js';
+import { stormFx } from './fx-storm.js';
+import { scenery } from './fx-scenery.js';
 
 const TAU = Math.PI * 2;
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -49,6 +52,7 @@ export class Arena {
     this.bgCache = null;
     this.enemyCache = null;
     this.sprites = makeSprites();
+    this.initStorm();
     this.resize();
     addEventListener('resize', () => this.resize());
   }
@@ -111,6 +115,11 @@ export class Arena {
 
   frame(dt) {
     this.adapt(dt);
+    // «стоп-кадр» удара, как в файтингах: на долю секунды всё почти замирает
+    if (this.hitStop > 0) {
+      this.hitStop -= dt;
+      dt *= 0.1;
+    }
     this.time += dt;
     // Ограничиваем число частиц: при просадке FPS старые искры просто пропадают.
     const cap = [160, 320, 600][this.quality];
@@ -125,7 +134,17 @@ export class Arena {
       ctx.translate(rand(-this.shake, this.shake), rand(-this.shake, this.shake));
       this.shake *= Math.pow(0.02, dt);
     }
+    // «удар камерой»: кадр на миг приближается к врагу и отпускает
+    if (this.punch > 0.002 && !this.reduceMotion) {
+      const ep = this.enemyPos;
+      const z = 1 + this.punch * 0.05;
+      ctx.translate(ep.x, ep.y);
+      ctx.scale(z, z);
+      ctx.translate(-ep.x, -ep.y);
+      this.punch *= Math.pow(0.004, dt);
+    }
     this.drawBackground(dt);
+    this.drawBackFx(dt);
     if (this.enemy) this.drawEnemy(dt);
     if (this.chest) this.drawChest(dt);
     this.drawShield();
@@ -133,6 +152,7 @@ export class Arena {
     this.drawParticles(dt);
     this.drawBolts(dt);
     this.drawRings(dt);
+    this.drawFrontFx(dt);
     this.drawSpeedLines(dt);
     this.drawTexts(dt);
     ctx.restore();
@@ -181,25 +201,39 @@ export class Arena {
     drawHeroHands(this.ctx, this.lastHeroHands, box, { glow: this.heroHands?.glow ?? null, alpha: this.heroAlpha });
   }
 
-  /** Статичная часть фона (небо, горы, деревья, мост) рисуется один раз в отдельный холст. */
+  /**
+   * Статичная часть фона рисуется один раз в два холста: дальний план (небо, светило, дальние горы)
+   * и ближний (ближние горы, силуэты, земля, виньетка). Планы потом чуть смещаются с разной
+   * скоростью — получается параллакс, как в 2D-играх.
+   */
   buildBackground() {
     const dpr = this.dpr;
-    const c = document.createElement('canvas');
-    c.width = Math.round((this.w + 40) * dpr);
-    c.height = Math.round((this.h + 40) * dpr);
-    const real = this.ctx;
-    this.ctx = c.getContext('2d');
-    this.ctx.setTransform(dpr, 0, 0, dpr, 20 * dpr, 20 * dpr);
-    this.paintStatic();
-    this.ctx = real;
-    this.bgCache = c;
+    const make = (part) => {
+      const c = document.createElement('canvas');
+      c.width = Math.round((this.w + 40) * dpr);
+      c.height = Math.round((this.h + 40) * dpr);
+      const real = this.ctx;
+      this.ctx = c.getContext('2d');
+      this.ctx.setTransform(dpr, 0, 0, dpr, 20 * dpr, 20 * dpr);
+      this.paintPart = part;
+      if (part === 'far') this.paintStatic();
+      else this.paintPlace();
+      this.ctx = real;
+      return c;
+    };
+    this.bgCache = make('far');
+    this.bgNear = make('near');
+    this.paintPart = null;
   }
 
   drawBackground(dt) {
     const { ctx, w, h } = this;
     const P = PLACES[this.place];
     if (!this.bgCache) this.buildBackground();
-    ctx.drawImage(this.bgCache, -20, -20, w + 40, h + 40);
+    // медленное «дыхание» камеры: ближний план смещается сильнее дальнего
+    const drift = this.reduceMotion ? 0 : Math.sin(this.time * 0.18);
+    const bob = this.reduceMotion ? 0 : Math.sin(this.time * 0.27) * 2;
+    ctx.drawImage(this.bgCache, -20 + drift * 4, -20 + bob * 0.5, w + 40, h + 40);
 
     if (this.place === 'night' || this.place === 'eclipse') {
       const step = this.quality === 0 ? 3 : 1;
@@ -223,6 +257,10 @@ export class Arena {
       ctx.stroke();
     }
 
+    this.drawAmbient(dt);
+    this.drawFog(dt, 0);
+    ctx.drawImage(this.bgNear, -20 + drift * 11, -20 + bob, w + 40, h + 40);
+    this.drawFog(dt, 1);
     this.drawFloaters(dt);
   }
 
@@ -235,6 +273,7 @@ export class Arena {
     g.addColorStop(1, P.sky[2]);
     ctx.fillStyle = g;
     ctx.fillRect(-20, -20, w + 40, h + 40);
+    this.skyGrad = g;
 
     if (P.orb) {
       const mx = w * P.orb.x;
@@ -252,6 +291,7 @@ export class Arena {
     }
 
     if (P.eclipse) {
+      this.eclipseRays();
       const mx = w * 0.78;
       const my = h * 0.22;
       const mr = Math.min(w, h) * 0.1;
@@ -270,12 +310,8 @@ export class Arena {
       ctx.fill();
     }
 
-    this.mountains(h * 0.72, P.hills[0], 0.9, 7);
-    if (P.trees) this.trees(P.hills[1]);
-    this.mountains(h * 0.82, P.hills[1], 1.3, 13);
-    ctx.fillStyle = P.ground;
-    ctx.fillRect(-20, h * 0.9, w + 40, h * 0.2);
-    if (P.bridge) this.bridge();
+    // горы, силуэты, вода, трава и виньетка — src/fx-scenery.js
+    this.paintPlace();
   }
 
   drawFloaters(dt) {
@@ -304,53 +340,6 @@ export class Arena {
     }
   }
 
-  mountains(base, color, amp, seed) {
-    const { ctx, w, h } = this;
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.moveTo(-20, h);
-    for (let x = -20; x <= w + 20; x += 20) {
-      const y = base - (Math.sin(x * 0.004 + seed) * 50 + Math.sin(x * 0.011 + seed * 2) * 25 + 40) * amp;
-      ctx.lineTo(x, y);
-    }
-    ctx.lineTo(w + 20, h);
-    ctx.closePath();
-    ctx.fill();
-  }
-
-  trees(color) {
-    const { ctx, w, h } = this;
-    ctx.fillStyle = color;
-    for (let i = 0; i < 9; i++) {
-      const x = (i / 8) * w + Math.sin(i * 7) * 40;
-      if (Math.abs(x - w * 0.5) < w * 0.18) continue;
-      const tw = 26 + (i % 3) * 10;
-      ctx.fillRect(x - tw / 2, h * 0.2, tw, h * 0.75);
-      ctx.beginPath();
-      ctx.ellipse(x, h * 0.22, tw * 3, h * 0.12, 0, 0, TAU);
-      ctx.fill();
-    }
-  }
-
-  bridge() {
-    const { ctx, w, h } = this;
-    ctx.strokeStyle = '#2a1420';
-    ctx.lineWidth = 8;
-    ctx.beginPath();
-    ctx.moveTo(0, h * 0.8);
-    ctx.quadraticCurveTo(w / 2, h * 0.72, w, h * 0.8);
-    ctx.stroke();
-    ctx.lineWidth = 5;
-    for (let i = 0; i <= 16; i++) {
-      const x = (i / 16) * w;
-      const y = h * 0.8 - Math.sin((i / 16) * Math.PI) * h * 0.04;
-      ctx.beginPath();
-      ctx.moveTo(x, y);
-      ctx.lineTo(x, y + h * 0.1);
-      ctx.stroke();
-    }
-  }
-
   drawEnemy(dt) {
     const { ctx } = this;
     const e = this.enemy;
@@ -363,10 +352,29 @@ export class Arena {
     const fade = (1 - e.dead) * e.enter;
     if (fade <= 0) return;
 
+    // тень под ногами врага — он стоит на земле, а не висит в воздухе
+    ctx.save();
+    ctx.globalAlpha = fade * 0.8;
+    ctx.translate(p.x + shakeX + (1 - e.enter) * 200, p.y + 250 * s);
+    ctx.scale(1, 0.22);
+    const sh = ctx.createRadialGradient(0, 0, 0, 0, 0, 190 * s);
+    sh.addColorStop(0, 'rgba(0,0,0,0.6)');
+    sh.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = sh;
+    ctx.beginPath();
+    ctx.arc(0, 0, 190 * s, 0, TAU);
+    ctx.fill();
+    ctx.restore();
+
     ctx.save();
     ctx.globalAlpha = fade;
-    ctx.translate(p.x + shakeX + (1 - e.enter) * 200, p.y + bob);
-    ctx.scale(s, s);
+    // отдача от попадания: враг отлетает назад и сплющивается, потом пружинит обратно
+    const kick = this.enemyKick ?? 0;
+    this.enemyKick = kick * Math.pow(0.002, dt);
+    ctx.translate(p.x + shakeX + (1 - e.enter) * 200, p.y + bob - kick * 18 * s);
+    // дыхание: грудь чуть поднимается
+    const breathe = this.reduceMotion ? 0 : Math.sin(this.time * 2.1) * 0.012;
+    ctx.scale(s * (1 + kick * 0.08), s * (1 + breathe - kick * 0.1));
 
     // Аура: краснеет при заряде; у главного злодея во второй фазе — постоянная
     const auraR = 190 + (charging ? e.charge * 110 : 0);
@@ -380,6 +388,8 @@ export class Arena {
     ctx.arc(0, 0, auraR, 0, TAU);
     ctx.fill();
 
+    // у Кагэро — языки тёмного пламени за спиной
+    if (e.look === 'warlord' && this.quality > 0) drawKageroAura(ctx, this.time, { phase2: e.phase2, charge: charging ? e.charge : 0 });
     // Персонаж рисуется в отдельный холст ~20 раз в секунду, а на сцену — одной картинкой.
     const sprite = this.enemySprite(e, s);
     ctx.drawImage(sprite.canvas, SPRITE.x0, SPRITE.y0, SPRITE.w, SPRITE.h);
@@ -432,28 +442,109 @@ export class Arena {
     g.clearRect(0, 0, c.canvas.width, c.canvas.height);
     g.setTransform(scale, 0, 0, scale, -SPRITE.x0 * scale, -SPRITE.y0 * scale);
     drawCharacter(g, e.look, this.time, e);
+    if (this.quality > 0) this.lightSprite(c);
     c.key = key;
     c.at = this.time;
     this.enemyCache = c;
     return c;
   }
 
+  /**
+   * Свет сцены на персонаже: объём (светлее сверху, темнее снизу) и контровой свет —
+   * тонкий цветной край со стороны луны, затмения или фонарей.
+   */
+  lightSprite(c) {
+    const g = c.ctx;
+    const { width: W, height: H } = c.canvas;
+    const light = {
+      night: { color: '150,175,255', dx: 1, dy: -1 },
+      forest: { color: '255,220,150', dx: -1, dy: -1 },
+      bridge: { color: '255,170,110', dx: -1, dy: -0.4 },
+      eclipse: { color: '255,140,70', dx: 1, dy: -1 },
+      dawn: { color: '255,230,200', dx: 0, dy: -1 },
+    }[this.place] ?? { color: '255,255,255', dx: 1, dy: -1 };
+    g.save();
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.globalCompositeOperation = 'source-atop';
+    const sg = g.createLinearGradient(W * (0.5 + light.dx * 0.5), H * (0.5 + light.dy * 0.5), W * (0.5 - light.dx * 0.5), H * (0.5 - light.dy * 0.5) + H * 0.3);
+    sg.addColorStop(0, 'rgba(255,245,230,0.10)');
+    sg.addColorStop(0.45, 'rgba(0,0,0,0)');
+    sg.addColorStop(1, 'rgba(12,4,24,0.42)');
+    g.fillStyle = sg;
+    g.fillRect(0, 0, W, H);
+    // контровой свет: силуэт минус тот же силуэт, сдвинутый от источника света
+    if (!this.rimCanvas || this.rimCanvas.width !== W || this.rimCanvas.height !== H) {
+      this.rimCanvas = document.createElement('canvas');
+      this.rimCanvas.width = W;
+      this.rimCanvas.height = H;
+    }
+    const r = this.rimCanvas.getContext('2d');
+    const off = Math.max(3, W / 110);
+    r.globalCompositeOperation = 'source-over';
+    r.clearRect(0, 0, W, H);
+    r.drawImage(c.canvas, 0, 0);
+    r.globalCompositeOperation = 'source-in';
+    r.fillStyle = `rgb(${light.color})`;
+    r.fillRect(0, 0, W, H);
+    r.globalCompositeOperation = 'destination-out';
+    r.drawImage(c.canvas, -light.dx * off, -light.dy * off);
+    g.globalCompositeOperation = 'source-atop';
+    g.globalAlpha = 0.85;
+    g.drawImage(this.rimCanvas, 0, 0);
+    g.restore();
+  }
+
   drawShield() {
     if (this.shield <= 0.01) return;
     const { ctx, w, h } = this;
     const r = h * 0.5;
+    const cx = w * 0.5;
+    const cy = h * 1.05;
     const pulse = 0.5 + 0.2 * Math.sin(this.time * 5);
+    // купол воды «вырастает» за 0,3 с
+    const grow = Math.min(1, (this.time - (this.shieldAt ?? -9)) / 0.3);
+    const R = r * (0.6 + 0.4 * grow);
     ctx.save();
-    ctx.strokeStyle = `rgba(88,208,255,${0.55 * this.shield * pulse + 0.2})`;
+    const g = ctx.createRadialGradient(cx, cy, R * 0.55, cx, cy, R);
+    g.addColorStop(0, 'rgba(88,208,255,0)');
+    g.addColorStop(0.8, `rgba(88,208,255,${0.12 * this.shield})`);
+    g.addColorStop(1, `rgba(150,230,255,${0.3 * this.shield})`);
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, Math.PI, TAU);
+    ctx.fill();
+    // бегущие волны по поверхности купола
+    ctx.lineCap = 'round';
+    for (let i = 0; i < 4; i++) {
+      const rr = R * (0.72 + i * 0.08);
+      const off = this.time * (0.6 + i * 0.25) + i;
+      ctx.strokeStyle = `rgba(190,240,255,${(0.18 + 0.1 * i) * this.shield})`;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let a = Math.PI; a <= TAU + 0.001; a += 0.06) {
+        const wob = Math.sin(a * 9 + off * 4) * 5;
+        const x = cx + Math.cos(a) * (rr + wob);
+        const y = cy + Math.sin(a) * (rr + wob);
+        if (a === Math.PI) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+    // блики-«каустики»
+    ctx.globalCompositeOperation = 'lighter';
+    for (let i = 0; i < 6; i++) {
+      const a = Math.PI * (1.15 + i * 0.13) + Math.sin(this.time * 1.3 + i) * 0.05;
+      ctx.fillStyle = `rgba(220,250,255,${0.25 * this.shield * (0.5 + 0.5 * Math.sin(this.time * 3 + i * 2))})`;
+      ctx.beginPath();
+      ctx.ellipse(cx + Math.cos(a) * R * 0.93, cy + Math.sin(a) * R * 0.93, 16, 4, a + Math.PI / 2, 0, TAU);
+      ctx.fill();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+    ctx.strokeStyle = `rgba(150,230,255,${0.6 * this.shield * pulse + 0.25})`;
     ctx.lineWidth = 4;
     ctx.beginPath();
-    ctx.arc(w * 0.5, h * 1.05, r, Math.PI, TAU);
+    ctx.arc(cx, cy, R, Math.PI, TAU);
     ctx.stroke();
-    const g = ctx.createRadialGradient(w * 0.5, h * 1.05, r * 0.6, w * 0.5, h * 1.05, r);
-    g.addColorStop(0, 'rgba(88,208,255,0)');
-    g.addColorStop(1, `rgba(88,208,255,${0.18 * this.shield})`);
-    ctx.fillStyle = g;
-    ctx.fill();
     ctx.restore();
   }
 
@@ -639,6 +730,8 @@ export class Arena {
           ctx.ellipse(x, y, r, r * 0.35, this.time * 8 + (i * Math.PI) / 3, 0, TAU);
           ctx.stroke();
         }
+      } else {
+        this.drawParticle2(p, k);
       }
     }
     this.particles = keep;
@@ -725,8 +818,13 @@ function makeSprites() {
   for (let hue = 10; hue <= 45; hue += 7) {
     fire.push(radial([[0, `hsla(${hue + 20},100%,75%,0.95)`], [1, `hsla(${hue},100%,50%,0)`]]));
   }
-  const cloud = radial([[0, 'rgba(70,74,105,1)'], [0.75, 'rgba(30,32,55,0.95)'], [1, 'rgba(20,22,40,0)']], 96);
-  return { fire, cloud };
+  const cloud = radial([[0, 'rgba(74,78,110,0.95)'], [0.45, 'rgba(46,48,74,0.8)'], [0.8, 'rgba(28,30,50,0.35)'], [1, 'rgba(20,22,40,0)']], 96);
+  const glow = radial([[0, 'rgba(255,170,70,0.55)'], [0.4, 'rgba(255,100,30,0.22)'], [1, 'rgba(255,60,20,0)']], 128);
+  const core = radial([[0, 'rgba(255,255,235,1)'], [0.35, 'rgba(255,230,140,1)'], [0.7, 'rgba(255,140,40,0.9)'], [1, 'rgba(255,80,20,0)']], 128);
+  const smoke = radial([[0, 'rgba(60,52,58,0.95)'], [0.6, 'rgba(45,38,46,0.7)'], [1, 'rgba(30,26,34,0)']], 96);
+  const fly = radial([[0, 'rgba(255,245,170,0.6)'], [1, 'rgba(255,230,120,0)']], 32);
+  const skyGlow = radial([[0, 'rgba(200,225,255,0.5)'], [1, 'rgba(200,225,255,0)']], 128);
+  return { fire, cloud, glow, core, smoke, fly, skyGlow };
 }
 
 function hexA(hex, a) {
@@ -735,4 +833,4 @@ function hexA(hex, a) {
 }
 
 // Эффекты техник и сундук живут в своих файлах, но это методы той же сцены
-for (const part of [effects, chestFx]) Object.defineProperties(Arena.prototype, Object.getOwnPropertyDescriptors(part));
+for (const part of [effects, chestFx, stormFx, scenery]) Object.defineProperties(Arena.prototype, Object.getOwnPropertyDescriptors(part));

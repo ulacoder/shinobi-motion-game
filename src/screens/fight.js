@@ -86,9 +86,9 @@ export const fight = {
     renderTechList($('battle-techs'), this.techOpts({ ultimateReady: state.run.chakra >= 100 }));
 
     // HUD: портреты, имена, этап
-    drawPortrait($('portrait-hero'), 'ulagat', { mood: 'angry', bg: '#1d4a66', lines: false });
+    drawPortrait($('portrait-hero'), 'ulagat', { mood: 'angry', bg: '#1d4a66', lines: false, close: true });
     $('combo').hidden = true;
-    drawPortrait($('portrait-enemy'), this.enemy.look, { tint: this.enemy.tint, bg: '#40202a', lines: false });
+    drawPortrait($('portrait-enemy'), this.enemy.look, { tint: this.enemy.tint, bg: '#40202a', lines: false, close: true });
     $('enemy-name').textContent = this.enemy.name;
     $('enemy-title').textContent = this.enemy.title;
     $('stage-label').textContent = `Этап ${step.stage} из 3`;
@@ -291,6 +291,10 @@ export const fight = {
     const enemyHp = b ? b.enemyHp : this.enemy.hp;
     setWidth($('hp-enemy'), pct(enemyHp / this.enemy.hp));
     setWidth($('hp-player'), pct(playerHp / PLAYER_MAX_HP));
+    // светлый «след урона» догоняет полосу с задержкой — видно, сколько сняли
+    setWidth($('hp-enemy-trail'), pct(enemyHp / this.enemy.hp));
+    setWidth($('hp-player-trail'), pct(playerHp / PLAYER_MAX_HP));
+    $('hp-player').classList.toggle('low', playerHp / PLAYER_MAX_HP < 0.3);
     const chakra = b ? b.chakra : state.run.chakra;
     setWidth($('chakra'), pct(chakra / 100));
     setText($('chakra-val'), pct(chakra / 100));
