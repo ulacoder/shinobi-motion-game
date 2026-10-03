@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Путь печатей — питч</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='14' fill='%23d9442f'/><text x='32' y='45' font-size='38' text-anchor='middle' fill='%23f3e8ca'>印</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Слайды -->
+  <main id="stage">
+    <div id="deck">
+      <div id="zoomLayer"></div>
+    </div>
+  </main>
+
+  <!-- Лазерный след (экранные координаты) -->
+  <canvas id="ink"></canvas>
+
+  <!-- Курсоры рук -->
+  <div id="cursors"></div>
+
+  <!-- Прогресс слайдов -->
+  <div id="progress"><div id="progressBar"></div></div>
+
+  <!-- Всплывающие подсказки -->
+  <div id="toast"></div>
+
+  <!-- Индикатор зума -->
+  <div id="zoomBadge" hidden>×1.0</div>
+
+  <!-- Окно камеры -->
+  <section id="cam" class="size-m" hidden>
+    <header id="camBar">
+      <span class="dot" id="camDot"></span>
+      <span id="camTitle">HAND TRACK</span>
+      <span id="camFps">— fps</span>
+      <button id="btnExpo" title="Экспозиция (E)">☀ АВТО</button>
+      <button id="btnGest" title="Жесты вкл/выкл (G)">ЖЕСТЫ: ВКЛ</button>
+      <button id="btnSize" title="Размер окна (V)">⤢</button>
+    </header>
+    <div id="camView">
+      <video id="video" playsinline muted></video>
+      <canvas id="frame"></canvas>
+      <canvas id="skel"></canvas>
+      <div id="scan"></div>
+      <div id="lightHint" hidden></div>
+    </div>
+    <div id="expo" hidden>
+      <div class="ex-row ex-head">
+        <div class="seg"><button data-mode="auto">АВТО</button><button data-mode="manual">РУЧНАЯ</button></div>
+        <div class="meter" title="Яркость кадра (полоса) и ладони (метка); светлая зона — норма">
+          <div class="meter-ok"></div><div id="meterFill"></div><div id="meterHand" hidden></div>
+        </div>
+      </div>
+      <label class="ex-row"><span>Яркость</span><input id="exGain" type="range" step="0.05"><output id="exGainV"></output></label>
+      <label class="ex-row"><span>Контраст</span><input id="exContrast" type="range" step="0.05"><output id="exContrastV"></output></label>
+      <div id="hwControls"></div>
+      <div class="ex-row ex-foot"><span id="exInfo"></span><button id="exReset">СБРОС</button></div>
+    </div>
+    <footer id="camHud">
+      <div class="hand-pill" id="pill0"><b>—</b><span>рука не видна</span></div>
+      <div class="hand-pill" id="pill1"><b>—</b><span></span></div>
+    </footer>
+  </section>
+
+  <!-- Стартовый экран / помощь -->
+  <section id="intro">
+    <div class="intro-card">
+      <div class="intro-head">
+        <div class="seal">印</div>
+        <div>
+          <div class="kicker">TEAM JACKET · ADMIT HACKATHON 2026</div>
+          <h1>Путь печатей <span>· pitch mode</span></h1>
+        </div>
+      </div>
+      <p class="lead">Презентацией управляем руками — как в игре. Видео обрабатывается прямо в браузере и никуда не отправляется.</p>
+
+      <div class="gestures">
+        <div class="g"><div class="gi">☝️</div><b>Указка</b><span>Один указательный палец — лазерная точка со следом</span></div>
+        <div class="g"><div class="gi">✋</div><b>Листать</b><span>Открытая ладонь, резкий взмах влево / вправо</span></div>
+        <div class="g"><div class="gi" style="font-size:17px;letter-spacing:-2px">✊✋</div><b>Приблизить / отдалить</b><span>Кулак → раскрыть ладонь — приблизить в этой точке. Ладонь → сжать в кулак — отдалить</span></div>
+        <div class="g"><div class="gi">✋</div><b>Осмотр</b><span>При зуме води открытой ладонью или тяни щипком 🤏</span></div>
+      </div>
+
+      <div class="intro-actions">
+        <button id="btnStart" class="primary">Включить камеру и жесты</button>
+        <button id="btnNoCam" class="ghost">Без камеры</button>
+        <span id="loadStatus"></span>
+      </div>
+
+      <div class="keys">
+        <span><kbd>←</kbd><kbd>→</kbd> листать</span>
+        <span><kbd>F</kbd> полный экран</span>
+        <span><kbd>G</kbd> жесты вкл/выкл</span>
+        <span><kbd>V</kbd> размер камеры</span>
+        <span><kbd>E</kbd> экспозиция</span>
+        <span><kbd>0</kbd> сброс зума</span>
+        <span><kbd>H</kbd> эта подсказка</span>
+      </div>
+    </div>
+  </section>
+
+  <script>
+    if (location.protocol === 'file:') {
+      document.getElementById('loadStatus').className = 'err';
+      document.getElementById('loadStatus').textContent = 'Открой сайт через start.bat (локальный сервер) — с file:// камера и модель не работают.';
+    }
+  </script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
