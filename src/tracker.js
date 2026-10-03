@@ -188,8 +188,10 @@ export function createHandTracker(onStatus = () => {}) {
         baseOptions: { ...modelSource, delegate },
         runningMode: 'VIDEO',
         numHands: 2,
-        minHandDetectionConfidence: 0.5,
-        minHandPresenceConfidence: 0.5,
+        // новую руку принимаем только при уверенном обнаружении: глаз или складка одежды
+        // иногда похожи на кисть; уже найденную руку держим мягче, чтобы трекинг не рвался
+        minHandDetectionConfidence: 0.7,
+        minHandPresenceConfidence: 0.6,
         minTrackingConfidence: 0.5,
       });
       let landmarker;

@@ -1,7 +1,7 @@
 // Точка входа: камера → распознавание → главный цикл. Экраны лежат в src/screens/,
 // общее состояние и переключение экранов — в src/app/context.js, сюжет — в src/app/story.js.
 
-import { buildHands, FINGER_NAMES } from './geometry.js';
+import { buildHands, assignSides, FINGER_NAMES, HandGate } from './geometry.js';
 import { SEALS, classify } from './seals.js';
 import { TECHNIQUES } from './battle.js';
 import { startCamera, createHandTracker, CameraError, prefetchRecognition, stopProgress } from './tracker.js';
@@ -151,6 +151,25 @@ let detectCost = 8;
 let lastStampMs = 1;
 
 let recordedStamp = -1;
+const handGate = new HandGate();
+
+// Регулировка экспозиции: в тёмной комнате распознаванию отдаём осветлённую копию кадра
+// (яркость подбирается по средней яркости кадра), в нормальном свете — сам кадр без копирования.
+const expoCanvas = document.createElement('canvas');
+const expoCtx = expoCanvas.getContext('2d');
+let exposureGain = 1;
+function exposed(src, bright = 1) {
+  const target = bright < 0.32 ? Math.min(2.4, 0.42 / Math.max(bright, 0.05)) : 1;
+  exposureGain += (target - exposureGain) * 0.15; // плавно, чтобы скелет не дёргался от скачков яркости
+  if (exposureGain < 1.05 || !src.videoWidth) return src;
+  if (expoCanvas.width !== src.videoWidth || expoCanvas.height !== src.videoHeight) {
+    expoCanvas.width = src.videoWidth;
+    expoCanvas.height = src.videoHeight;
+  }
+  expoCtx.filter = `brightness(${exposureGain.toFixed(2)}) contrast(1.12)`;
+  expoCtx.drawImage(src, 0, 0);
+  return expoCanvas;
+}
 const heroSmoother = new HandSmoother();
 
 function loop(now) {
@@ -172,13 +191,13 @@ function loop(now) {
       const t0 = performance.now();
       // MediaPipe требует строго растущие метки времени
       lastStampMs = Math.max(now, lastStampMs + 1);
-      const result = tracker.detectForVideo(video, lastStampMs);
+      const result = tracker.detectForVideo(exposed(video, state.lastBright), lastStampMs);
       // Трекинг рук важнее красоты: каждый новый кадр камеры распознаём сразу (скелет не отстаёт),
       // а если распознавание дорогое — упрощаем графику сцены, а не пропускаем кадры.
       detectCost = detectCost * 0.9 + (performance.now() - t0) * 0.1;
       detectGap = detectCost > 40 ? 45 : 0;
       arena.capQuality(detectCost > 20 ? 0 : detectCost > 12 ? 1 : 2);
-      state.hands = buildHands(result, state.aspect);
+      state.hands = assignSides(handGate.filter(buildHands(result, state.aspect)), state.aspect);
       state.handsStamp = now;
     } catch (err) {
       console.warn('Ошибка распознавания кадра', err);
@@ -233,6 +252,9 @@ window.__shinobi = {
   FINGER_NAMES,
   get hands() {
     return state.hands;
+  },
+  get exposure() {
+    return { gain: exposureGain, bright: state.lastBright };
   },
   setFakeResult(result) {
     fakeResult = result;

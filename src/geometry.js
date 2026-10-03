@@ -79,6 +79,16 @@ export function fingerExtension(pts, finger) {
  * aspect = ширина/высота видео, чтобы расстояния по X и Y были сравнимы.
  * Сторона руки определяется по положению в зеркальном кадре — так, как её видит игрок.
  */
+/**
+ * Отсекаем ложные «руки»: модель иногда принимает за кисть глаз или складку одежды —
+ * такая «рука» крошечная. Настоящая ладонь в игровой зоне — от ~6% высоты кадра
+ * (меньше — подсказка «придвинься»), всё, что меньше 3,5%, игнорируем.
+ */
+export const MIN_PALM = 0.035;
+export function plausibleHand(screen) {
+  return dist(screen[0], screen[9]) >= MIN_PALM;
+}
+
 export function buildHands(result, aspect = 16 / 9) {
   const hands = [];
   const list = result?.landmarks ?? [];
@@ -91,6 +101,7 @@ export function buildHands(result, aspect = 16 / 9) {
     for (const f of FINGERS) ext[f] = fingerExtension(world, f);
     const xs = screen.map((p) => p.x);
     const ys = screen.map((p) => p.y);
+    if (!plausibleHand(screen)) continue;
     hands.push({
       img,
       world,
@@ -108,8 +119,14 @@ export function buildHands(result, aspect = 16 / 9) {
       aspect,
     });
   }
-  // Сторона руки: по положению на экране, а не по «handedness» MediaPipe,
-  // которая путается при зеркальной камере и у левшей.
+  return assignSides(hands, aspect);
+}
+
+/**
+ * Сторона руки: по положению на экране, а не по «handedness» MediaPipe,
+ * которая путается при зеркальной камере и у левшей.
+ */
+export function assignSides(hands, aspect = 16 / 9) {
   if (hands.length === 2) {
     const [a, b] = hands;
     const left = a.center.x <= b.center.x ? a : b;
@@ -134,3 +151,36 @@ export const SIDE_NAMES = {
   right: { nom: 'правая рука', acc: 'правую руку', prep: 'правой руке' },
   center: { nom: 'рука', acc: 'руку', prep: 'руке' },
 };
+
+/**
+ * Фильтр мелькающих ложных рук: новая рука засчитывается, только если держится
+ * в кадре несколько распознаваний подряд (~50 мс). Ложные срабатывания на глазах
+ * и бликах мигают и до порога не доживают; уже найденная рука проходит сразу.
+ */
+export class HandGate {
+  constructor(need = 3, radius = 0.18) {
+    this.need = need;
+    this.radius = radius;
+    this.tracks = [];
+  }
+
+  filter(hands) {
+    const next = [];
+    const used = new Set();
+    for (const h of hands) {
+      let best = null;
+      let bestD = this.radius;
+      for (const t of this.tracks) {
+        const d = dist(t.center, h.center);
+        if (d < bestD && !used.has(t)) {
+          best = t;
+          bestD = d;
+        }
+      }
+      if (best) used.add(best);
+      next.push({ center: h.center, count: (best?.count ?? 0) + 1, hand: h });
+    }
+    this.tracks = next;
+    return next.filter((t) => t.count >= this.need).map((t) => t.hand);
+  }
+}
