@@ -57,8 +57,28 @@ export class Arena {
     addEventListener('resize', () => this.resize());
   }
 
+  /**
+   * Потолок качества от нагрузки распознавания рук: понижаем сразу, повышаем только
+   * после 6 секунд спокойной работы (смена качества перестраивает фон).
+   */
+  capQuality(cap) {
+    const cur = this.qualityCap ?? 2;
+    if (cap < cur) {
+      this.qualityCap = cap;
+      this.capAt = this.time;
+      if (this.quality > cap) {
+        this.quality = cap;
+        this.resize();
+      }
+    } else if (cap > cur && this.time - (this.capAt ?? 0) > 6) {
+      this.qualityCap = cur + 1;
+      this.capAt = this.time;
+    }
+  }
+
   get dpr() {
-    const base = Math.min(devicePixelRatio || 1, 1.5);
+    // выше 1,25 разница на глаз почти не видна, а заливка экрана дорожает в разы
+    const base = Math.min(devicePixelRatio || 1, 1.25);
     return base * [0.6, 0.8, 1][this.quality];
   }
 
@@ -88,7 +108,7 @@ export class Arena {
     if (p80 > 1 / 42 && this.quality > 0) {
       this.quality -= 1;
       this.loweredAt = this.time;
-    } else if (this.goodWindows >= 8 && this.quality < 2 && this.time - (this.loweredAt ?? -99) > 8) {
+    } else if (this.goodWindows >= 8 && this.quality < (this.qualityCap ?? 2) && this.time - (this.loweredAt ?? -99) > 8) {
       this.quality += 1;
       this.goodWindows = 0;
     }

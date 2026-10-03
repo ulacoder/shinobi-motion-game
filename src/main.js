@@ -173,9 +173,11 @@ function loop(now) {
       // MediaPipe требует строго растущие метки времени
       lastStampMs = Math.max(now, lastStampMs + 1);
       const result = tracker.detectForVideo(video, lastStampMs);
-      // Если распознавание тяжёлое (слабый ноутбук), реже запускаем его, чтобы графика не тормозила.
+      // Трекинг рук важнее красоты: каждый новый кадр камеры распознаём сразу (скелет не отстаёт),
+      // а если распознавание дорогое — упрощаем графику сцены, а не пропускаем кадры.
       detectCost = detectCost * 0.9 + (performance.now() - t0) * 0.1;
-      detectGap = detectCost > 22 ? 60 : detectCost > 14 ? 40 : 0;
+      detectGap = detectCost > 40 ? 45 : 0;
+      arena.capQuality(detectCost > 20 ? 0 : detectCost > 12 ? 1 : 2);
       state.hands = buildHands(result, state.aspect);
       state.handsStamp = now;
     } catch (err) {
