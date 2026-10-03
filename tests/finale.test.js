@@ -74,19 +74,3 @@ test('Дуэль с тенью: 5 раундов без повторов под�
   assert.equal(duelRank([win(2000), win(2200), win(1900), { won: false }, { won: false }]).kanji, '忍');
   assert.equal(duelRank([{ won: false }, { won: false }, win(1900), { won: false }, { won: false }]).kanji, '修');
 });
-
-// ---------- темно, но руки видны: подсказки по пальцам не глушатся ----------
-import { frameIssue, darkButSeen } from '../src/quality.js';
-
-const hand = { side: 'left', palm: 0.15, bbox: { minX: 0.5, maxX: 0.8, minY: 0.3, maxY: 0.7 } };
-
-test('темнота без рук — сенсей говорит про свет', () => {
-  assert.equal(frameIssue([], 0.08, 16 / 9)?.id, 'dark');
-  assert.equal(darkButSeen([], 0.08), false);
-});
-
-test('темнота, но руки распознаны — нет плашки, вместо неё значок у превью', () => {
-  assert.equal(frameIssue([hand], 0.08, 16 / 9), null);
-  assert.equal(darkButSeen([hand], 0.08), true);
-  assert.equal(darkButSeen([hand], 0.5), false);
-});

@@ -37,7 +37,7 @@ export const duel = {
     setWidth($('duel-fill'), '100%');
     this.renderDots();
     this.choice ??= new GestureChoice($('duel-result'), {
-      menu: () => go('menu'),
+      snake: () => go('menu'),
       tiger: () => this.enter(),
     });
     arena.setPlace('eclipse');

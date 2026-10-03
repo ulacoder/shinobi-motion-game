@@ -33,18 +33,8 @@ export class BrightnessMeter {
 /**
  * Возвращает самую важную проблему съёмки или null, если всё хорошо.
  */
-export const DARK_LEVEL = 0.16;
-
-/**
- * Темно, но руки камера всё равно нашла: подсказки по пальцам важнее,
- * поэтому про свет говорим маленьким значком у превью, а не плашкой сенсея.
- */
-export function darkButSeen(hands, brightness) {
-  return brightness < DARK_LEVEL && hands.length > 0;
-}
-
 export function frameIssue(hands, brightness, aspect) {
-  if (brightness < DARK_LEVEL && !hands.length) {
+  if (brightness < 0.16) {
     return { id: 'dark', hint: 'Слишком темно: включи свет или повернись лицом к окну' };
   }
   for (const h of hands) {

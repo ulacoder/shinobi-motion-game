@@ -82,14 +82,6 @@ export class Arena {
     if (this.quality !== was) this.resize();
   }
 
-  /** Сдвиг луны для экрана, где её иначе закрывает превью камеры (меню). null — как задумано в PLACES. */
-  setOrb(at) {
-    const key = at ? `${at.x},${at.y}` : '';
-    if (key !== (this.orbKey ?? '')) this.bgCache = null;
-    this.orbKey = key;
-    this.orbAt = at;
-  }
-
   setPlace(place) {
     const next = PLACES[place] ? place : 'night';
     if (next !== this.place) this.bgCache = null;
@@ -245,9 +237,8 @@ export class Arena {
     ctx.fillRect(-20, -20, w + 40, h + 40);
 
     if (P.orb) {
-      const orb = this.orbAt ?? P.orb;
-      const mx = w * orb.x;
-      const my = h * orb.y;
+      const mx = w * P.orb.x;
+      const my = h * P.orb.y;
       const mr = Math.min(w, h) * 0.09;
       const mg = ctx.createRadialGradient(mx, my, mr * 0.2, mx, my, mr * 2.8);
       mg.addColorStop(0, hexA(P.orb.color, 0.3));

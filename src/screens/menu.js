@@ -19,8 +19,6 @@ export const menu = {
     this.choice.reset();
     sensei.clear();
     arena.setPlace('night');
-    // в меню справа большое превью камеры — луна уходит в просвет над ним, а не под рамку
-    arena.setOrb({ x: 0.56, y: 0.15 });
     arena.showEnemy(null);
     music.play('calm');
     music.setPlace('night');

@@ -46,16 +46,10 @@ for (const icon of document.querySelectorAll('[data-cue-icon]')) icon.innerHTML 
 const CUE_SCREENS = ['forge', 'dojo'];
 
 function paintCue(screen, cue, p) {
-  for (const btn of document.querySelectorAll(`#screen-${screen} [data-cue="${cue}"]`)) {
-    btn.classList.toggle('active', p > 0);
-    const circle = btn.querySelector('.ring circle');
-    if (circle) circle.style.strokeDashoffset = String(119.4 * (1 - p));
-  }
-}
-
-/** На экране есть своя карточка «В меню» — тогда отдельная всплывающая подсказка не нужна. */
-function hasMenuCard(screen) {
-  return [...document.querySelectorAll(`#screen-${screen} .choice[data-cue="both"]`)].some((b) => b.offsetParent !== null);
+  const btn = document.querySelector(`#screen-${screen} [data-cue="${cue}"]`);
+  if (!btn) return;
+  btn.classList.toggle('active', p > 0);
+  btn.querySelector('.ring circle').style.strokeDashoffset = String(119.4 * (1 - p));
 }
 
 export function updateBackGesture(now) {
@@ -71,12 +65,11 @@ export function updateBackGesture(now) {
   // подсказку видно всегда на спокойных экранах и только во время удержания — в бою и сценах
   // (на итогах, манге и свитке есть свои кнопки — там подсказка появляется только во время удержания)
   const calm = ['chapters'].includes(screen);
-  const card = allowed && hasMenuCard(screen);
-  backCue.hidden = !allowed || CUE_SCREENS.includes(screen) || card || (!calm && !p);
+  backCue.hidden = !allowed || CUE_SCREENS.includes(screen) || (!calm && !p);
   backCue.classList.toggle('active', p > 0);
   backCue.classList.toggle('dim', p === 0);
   backRing.style.strokeDashoffset = String(119.4 * (1 - p));
-  if (cues || card) paintCue(screen, 'both', p);
+  if (cues) paintCue(screen, 'both', p);
 
   // «окей» одной рукой — действие экрана (записать заново / пропустить урок); после срабатывания
   // ждём, пока руку опустят, чтобы не повторялось

@@ -93,7 +93,6 @@ export class GestureChoice {
     let active = null;
     let bestAcc = 0;
     for (const id of Object.keys(this.actions)) {
-      if (!SEALS[id]) continue; // «в меню» — не печать: его ведёт жест «окей» двумя руками (controls.js)
       const ev = evaluateSeal(id, hands);
       if (ev.passed && ev.accuracy > bestAcc) {
         active = id;

@@ -46,9 +46,7 @@ export const dojo = {
     ol.replaceChildren();
     LESSONS.forEach((l, i) => {
       const glyph = lessonGlyph(l);
-      const state = i < this.idx || this.finished ? 'done' : i === this.idx ? 'current' : '';
-      // пять печатей и два приёма: приёмы отделены и отмечены иначе, чтобы «7 значков» и «печать 1 из 5» не спорили
-      const li = el('li', `${state}${l.type === 'seal' ? '' : ' move'}`.trim(), glyph);
+      const li = el('li', i < this.idx || this.finished ? 'done' : i === this.idx ? 'current' : '', glyph);
       li.title = l.type === 'seal' ? SEALS[l.id].name : l.type === 'chop' ? 'Ладонь вверх-вниз' : 'Круг';
       ol.append(li);
     });
@@ -65,14 +63,14 @@ export const dojo = {
       const s = SEALS[lesson.id];
       $('lesson-hanko').textContent = s.kanji;
       $('lesson-icon').innerHTML = sealIcon(lesson.id, { size: 110 });
-      $('lesson-kicker').textContent = `Урок ${this.idx + 1} из ${LESSONS.length} · печать ${this.idx + 1} из ${SEAL_ORDER.length}`;
+      $('lesson-kicker').textContent = `Печать ${this.idx + 1} из ${SEAL_ORDER.length}`;
       $('lesson-name').textContent = s.name;
       $('lesson-how').textContent = s.how;
       $('lesson-best').textContent = best[lesson.id] ? `· лучший результат ${pct(best[lesson.id])}` : '';
     } else if (lesson.type === 'chop') {
       $('lesson-hanko').textContent = '斬';
       $('lesson-icon').innerHTML = techIcon('dragon', 80);
-      $('lesson-kicker').textContent = `Урок ${this.idx + 1} из ${LESSONS.length} · приём: удар для сундуков`;
+      $('lesson-kicker').textContent = 'Удар для сундуков и ультимейта';
       $('lesson-name').textContent = 'Ладонь вверх-вниз';
       $('lesson-how').textContent =
         'Просто подними раскрытую ладонь над головой и плавно опусти вниз. Так открываются бамбуковые сундуки и работает «Удар дракона».';
@@ -80,7 +78,7 @@ export const dojo = {
     } else {
       $('lesson-hanko').textContent = ULTIMATE.glyph;
       $('lesson-icon').innerHTML = techIcon('sphere', 80);
-      $('lesson-kicker').textContent = `Урок ${this.idx + 1} из ${LESSONS.length} · приём мастера`;
+      $('lesson-kicker').textContent = 'Приём мастера';
       $('lesson-name').textContent = ULTIMATE.name;
       $('lesson-how').textContent =
         'Оставь в кадре одну руку, подними указательный палец и нарисуй им в воздухе ровный круг размером с ладонь.';

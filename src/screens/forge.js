@@ -36,7 +36,7 @@ export const forge = {
     this.story = !!step;
     this.restart();
     this.choice ??= new GestureChoice($('forge-done'), {
-      menu: () => go('menu'),
+      snake: () => go('menu'),
       tiger: () => this.restart(),
       bird: () => startStory({ quick: true }),
     });
@@ -237,7 +237,7 @@ export const forge = {
     }
     $('forge-done').hidden = false;
     this.choice.reset();
-    sensei.show('Готово! Птица — в бой с этой печатью, Тигр — выковать ещё', 'good', now, { lock: 2000, ttl: 4500 });
+    sensei.show('Готово! Птица — в бой с этой печатью. Змея — меню. Тигр — выковать ещё', 'good', now, { lock: 2000, ttl: 4500 });
   },
 
   setMeter(acc, pass) {

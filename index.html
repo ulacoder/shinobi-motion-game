@@ -32,9 +32,6 @@
           <span class="cam-seal-glyph"></span>
           <span class="cam-seal-acc"></span>
         </div>
-        <div id="cam-dark" class="cam-dark" title="Темно: камера видит руки хуже. Включи свет или повернись к окну" hidden>
-          <span aria-hidden="true">暗</span> Темно — добавь света
-        </div>
       </div>
 
       <!-- 1. Вход -->
@@ -213,8 +210,12 @@
             <span class="meter-pass forge-pass"></span>
           </div>
           <p class="meter-label"><span id="forge-acc">0%</span> <span id="forge-label">готовность снимка</span></p>
-          <!-- «в меню» здесь — подсказка-жест внизу экрана, как во всей Кузнице -->
           <div id="forge-done" class="lesson-done" hidden>
+            <button class="choice" data-choice="snake" type="button">
+              <span class="choice-icon" data-seal="snake"></span>
+              <span class="choice-text"><strong>В меню</strong><span>Раскрой обе ладони</span></span>
+              <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+            </button>
             <button class="choice" data-choice="tiger" type="button">
               <span class="choice-icon" data-seal="tiger"></span>
               <span class="choice-text"><strong>Выковать ещё</strong><span>Тигр: указательный и средний вверх</span></span>
@@ -390,9 +391,9 @@
           </div>
         </article>
         <div class="choices choices-row">
-          <button class="choice" data-choice="menu" data-cue="both" type="button">
-              <span class="choice-icon" data-cue-icon="both"></span>
-              <span class="choice-text"><strong>В меню</strong><span>«окей» двумя руками</span></span>
+          <button class="choice" data-choice="snake" type="button">
+            <span class="choice-icon" data-seal="snake"></span>
+            <span class="choice-text"><strong>В меню</strong><span>Раскрой обе ладони</span></span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
           <button class="choice" data-choice="tiger" type="button">
@@ -400,9 +401,9 @@
             <span class="choice-text"><strong>Ещё раз</strong><span>Покажи Тигра</span></span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
-          <button class="choice" data-choice="snake" type="button">
-            <span class="choice-icon" data-seal="snake"></span>
-            <span class="choice-text"><strong>В додзё</strong><span>Раскрой обе ладони</span></span>
+          <button class="choice" data-choice="dog" type="button">
+            <span class="choice-icon" data-seal="dog"></span>
+            <span class="choice-text"><strong>В додзё</strong><span>Покажи Собаку</span></span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
         </div>
@@ -430,9 +431,9 @@
           <p id="duel-rank-line" class="lesson-how"></p>
           <ol id="duel-list" class="duel-list"></ol>
           <div class="choices choices-row duel-choices">
-            <button class="choice" data-choice="menu" data-cue="both" type="button">
-              <span class="choice-icon" data-cue-icon="both"></span>
-              <span class="choice-text"><strong>В меню</strong><span>«окей» двумя руками</span></span>
+            <button class="choice" data-choice="snake" type="button">
+              <span class="choice-icon" data-seal="snake"></span>
+              <span class="choice-text"><strong>В меню</strong><span>Раскрой обе ладони</span></span>
               <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
             </button>
             <button class="choice" data-choice="tiger" type="button">
@@ -459,9 +460,9 @@
           <h3 class="path-sub">Новое к финалу</h3>
           <ul id="path-new" class="path-new"></ul>
           <div class="choices choices-row path-choices">
-            <button class="choice" data-choice="menu" data-cue="both" type="button">
-              <span class="choice-icon" data-cue-icon="both"></span>
-              <span class="choice-text"><strong>В меню</strong><span>«окей» двумя руками</span></span>
+            <button class="choice" data-choice="snake" type="button">
+              <span class="choice-icon" data-seal="snake"></span>
+              <span class="choice-text"><strong>В меню</strong><span>Раскрой обе ладони</span></span>
               <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
             </button>
             <button class="choice" data-choice="bird" type="button">
@@ -522,7 +523,7 @@
       <!-- Большая печать-штамп при распознавании -->
       <div id="stamp" class="stamp" aria-hidden="true"></div>
 
-      <button id="sound-hint" class="sound-hint" type="button" title="Браузер включает звук только после клика или нажатия клавиши" hidden>Звук ждёт клика</button>
+      <button id="sound-hint" class="sound-hint" type="button" hidden>Звука нет: браузер ждёт клик — кликни по экрану или нажми любую клавишу</button>
 
       <button id="btn-sound" class="icon-btn" type="button" aria-pressed="true" title="Звук">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9H4z" /><path class="wave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" /></svg>

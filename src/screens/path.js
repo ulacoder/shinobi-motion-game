@@ -55,7 +55,7 @@ export const path = {
       news.append(li);
     });
     this.choice ??= new GestureChoice($('screen-path'), {
-      menu: () => go('menu'),
+      snake: () => go('menu'),
       bird: () => startStory({ quick: true }),
     });
     this.choice.reset();

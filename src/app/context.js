@@ -94,7 +94,6 @@ export function go(screen, arg) {
   app.dataset.screen = screen;
   state.controller = screens[screen] ?? null;
   camSeal.hidden = true;
-  arena.setOrb(null);
   state.controller?.enter?.(arg);
   sfx.select();
 }
