@@ -1,0 +1,24 @@
+# Реплики сенсея из одной записи audio_2026-10-04_01-41-10.ogg: id, начало и конец (секунды)
+g_ready 8.18 12.16
+f_1 12.56 19.22
+f_2 19.98 25.78
+se_forge_intro 26.08 32.02
+se_forge_done 32.56 36.62
+se_forged_warn 37.32 40.26
+se_rage 41.02 44.22
+se_block 45.14 46.50
+se_stun 47.14 49.74
+se_chakra 50.48 53.82
+se_returned 54.94 57.12
+se_read_won 57.66 59.80
+se_fall 60.58 62.18
+se_chest 63.06 66.70
+se_chest_hit 68.06 70.42
+se_chest_last 71.16 73.26
+se_chest_open 74.74 77.36
+se_duel 79.20 83.06
+se_duel_win 83.52 84.94
+se_duel_lose 86.60 88.20
+se_no_hands 89.45 92.32
+se_dojo_ok 92.94 93.92
+se_dojo_done 94.90 99.02

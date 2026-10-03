@@ -8,7 +8,7 @@ import { ChopDetector, bladeScore } from '../chop.js';
 import { wantsBySide } from '../ghost.js';
 import { TECHNIQUES, EXTRA_TECHNIQUES, ULTIMATE } from '../battle.js';
 import { sealIcon, techIcon } from '../icons.js';
-import { sfx } from '../audio.js';
+import { sfx, senseiVoice } from '../audio.js';
 import { music } from '../music.js';
 import { getSealBest, updateSealBest } from '../storage.js';
 import { $, el, GestureChoice, renderTechList, stamp } from '../ui.js';
@@ -146,6 +146,7 @@ export const dojo = {
     updateSealBest(key, accuracy);
     this.setMeter(accuracy, true);
     sensei.show(`Отлично! Совпадение ${pct(accuracy)}`, 'good', now, { lock: 1200 });
+    senseiVoice('se_dojo_ok', 1500);
     this.nextAt = now + 1300;
   },
 
@@ -181,6 +182,7 @@ export const dojo = {
         else if (e.type === 'hint' && !issue) sensei.show(e.hint, 'warn', now);
       }
       if (!state.hands.length && !issue) sensei.show('Подними руки к лицу: камера их не видит', 'warn', now);
+      if (!state.hands.length && !issue) senseiVoice('se_no_hands', 12000);
       return;
     }
 
@@ -266,6 +268,7 @@ export const dojo = {
       renderTechList($('lesson-techs'), { showDesc: true, techs: [...Object.values(TECHNIQUES), EXTRA_TECHNIQUES.wind], dragon: true });
       this.choice.reset();
       sensei.show('Раскрой обе ладони и держи секунду — начнём поход', 'good', performance.now());
+      senseiVoice('se_dojo_done');
       return;
     }
     this.renderSteps();

@@ -7,7 +7,7 @@ import { wantsBySide } from '../ghost.js';
 import { evaluateTemplate } from '../forge.js';
 import { getForged } from '../storage.js';
 import { ENEMIES } from '../battle.js';
-import { sfx } from '../audio.js';
+import { sfx, senseiVoice } from '../audio.js';
 import { music } from '../music.js';
 import { sealIcon } from '../icons.js';
 import { $, el, GestureChoice, stamp, drawHandForm } from '../ui.js';
@@ -46,6 +46,7 @@ export const duel = {
     music.play('boss');
     sfx.roar();
     sensei.show('Тень Кагэро показывает печать — повтори её быстрее', 'info', performance.now(), { ttl: 2600 });
+    senseiVoice('se_duel');
   },
 
   exit() {
@@ -148,6 +149,7 @@ export const duel = {
     this.pauseUntil = now + PAUSE_MS;
     this.renderDots();
     sensei.show('Быстрее тени!', 'good', now, { lock: 800 });
+    senseiVoice('se_duel_win');
   },
 
   lose(now) {
@@ -156,6 +158,7 @@ export const duel = {
     arena.playerHit(false);
     $('duel-panel').classList.add('lost');
     $('duel-title').textContent = 'Тень успела первой';
+    senseiVoice('se_duel_lose');
     this.overlayBad = null;
     this.overlayGuide = null;
     this.pauseUntil = now + PAUSE_MS;

@@ -33,7 +33,7 @@ ROLE = {
 
 def _role_by_prefix(line_id: str):
     if line_id.startswith(('se_', 'h_')):
-        return 'sensei'
+        return 'sensei_battle'
     if line_id.startswith('k_'):
         return 'boss'
     return None
@@ -107,6 +107,9 @@ FX = {
     'clear': 'equalizer=f=3000:t=q:w=1.2:g=3,aecho=0.8:0.25:40:0.08',
     'hurt': 'equalizer=f=200:t=q:w=1:g=3,aecho=0.8:0.4:60|120:0.25|0.12',
     'sensei': 'rubberband=pitch=0.9:formant=preserved,equalizer=f=250:t=q:w=1:g=3,aecho=0.8:0.6:90|180|320:0.30|0.20|0.12',
+    # короткие реплики сенсея в бою: тот же голос, но меньше эха — фраза звучит поверх грома и музыки
+    'sensei_battle': ('rubberband=pitch=0.9:formant=preserved,equalizer=f=250:t=q:w=1:g=3,'
+                      'equalizer=f=3000:t=q:w=1.2:g=2,aecho=0.8:0.35:70|150:0.16|0.08'),
     'scout': 'rubberband=pitch=0.92,equalizer=f=900:t=q:w=1.5:g=4,highpass=f=180,aecho=0.8:0.3:35:0.2',
     'oni': ('rubberband=pitch=0.82,chorus=0.6:0.9:40|55:0.35|0.3:0.25|0.4:2|2.3,'
             'equalizer=f=150:t=q:w=1:g=4,aecho=0.8:0.5:60|120:0.3|0.18'),

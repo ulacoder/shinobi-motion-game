@@ -7,7 +7,7 @@ import { CircleTracker, isPointing } from '../air.js';
 import { ChopDetector } from '../chop.js';
 import { Battle, TECHNIQUES, EXTRA_TECHNIQUES, ENEMIES, STAGE_NAMES, PLAYER_MAX_HP } from '../battle.js';
 import { drawPortrait } from '../characters.js';
-import { sfx, playVoice } from '../audio.js';
+import { sfx, playVoice, senseiVoice } from '../audio.js';
 import { music } from '../music.js';
 import { $, el, renderTechList, renderChain, snapshotHands, snapshotPath } from '../ui.js';
 import {
@@ -168,6 +168,7 @@ export const fight = {
           sfx.stun();
           arena.label('Оглушён!', '#f0b64a');
           sensei.show(`Атака сбита! ${this.enemy.name} оглушён`, 'good', now, { lock: 1200 });
+          senseiVoice('se_stun', 6000);
           break;
         case 'foe-charge':
           sfx.charge();
@@ -183,6 +184,7 @@ export const fight = {
             sfx.blocked();
             moment({ caption: 'Щит выдержал!', sfx: 'キィン!', priority: 2, once: 'block' });
             sensei.show('Щит выдержал удар!', 'good', now, { lock: 1000 });
+            senseiVoice('se_block', 8000);
           } else {
             sfx.hurt();
             playVoice('hero_hurt');
@@ -204,6 +206,7 @@ export const fight = {
           break;
         case 'ultimate-ready':
           sfx.ultimate();
+          senseiVoice('se_chakra');
           renderTechList($('battle-techs'), this.techOpts({ chain: b.chain, ultimateReady: true }));
           sensei.show(
             state.run.unlocked.includes('dragon')
@@ -241,6 +244,7 @@ export const fight = {
           sfx.lose();
           state.run.playerHp = 0;
           sensei.show('Улагат пал в бою…', 'warn', now, { lock: 2500, ttl: 2600 });
+          senseiVoice('se_fall');
           this.endAt = now + 2300;
           this.endAction = () => finishRun(false, `Поражение в бою с противником ${this.enemy.name}`);
           break;
@@ -322,6 +326,7 @@ export const fight = {
         // своя печать в бою с боссом: сразу предупреждаем, что Кагэро на неё охотится
         if (this.enemy.boss && this.forged) {
           sensei.show(`Кагэро чует твою печать «${this.forged.tech.name}». В ярости он попробует её украсть — повтори её первым!`, 'warn', now, { lock: 2500, ttl: 4500 });
+          senseiVoice('se_forged_warn');
         }
       }
       return;
@@ -436,6 +441,7 @@ export const fight = {
       sfx.roar();
       music.setIntensity(2);
       sensei.show('Кагэро в ярости! Теперь он заряжает удары быстрее', 'warn', now, { lock: 2200, ttl: 3000 });
+      senseiVoice('se_rage');
       this.phase2At = now;
     }
 

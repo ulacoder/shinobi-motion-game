@@ -8,7 +8,7 @@ import { FINGERS, FINGER_NAMES, SIDE_NAMES } from '../geometry.js';
 import { SEALS, classify } from '../seals.js';
 import { wantsBySide } from '../ghost.js';
 import { FORGE_SAMPLES, FORGE_PASS, features, learnTemplate, evaluateTemplate, describeTemplate, nameForSeal } from '../forge.js';
-import { sfx } from '../audio.js';
+import { sfx, senseiVoice } from '../audio.js';
 import { music } from '../music.js';
 import { saveForged } from '../storage.js';
 import { isOkSign } from '../fingers.js';
@@ -71,6 +71,7 @@ export const forge = {
     $('forge-name').textContent = 'Придумай свою печать';
     $('forge-how').textContent =
       'Любой жест одной или двумя руками: «коза», «рожки», сердечко из ладоней. Покажи его камере и замри — я сделаю 5 снимков и выведу для него правила.';
+    senseiVoice('se_forge_intro', 20000);
     $('forge-label').textContent = 'рука неподвижна';
     $('forge-checks').replaceChildren();
     this.renderDots();
@@ -233,11 +234,13 @@ export const forge = {
       // в сюжете — сразу дальше, к Кагэро
       this.nextAt = now + 3200;
       sensei.show(`${this.seal.name} — теперь твоя техника. Береги её: Кагэро захочет её украсть!`, 'good', now, { lock: 3000, ttl: 3500 });
+      senseiVoice('se_forge_done');
       return;
     }
     $('forge-done').hidden = false;
     this.choice.reset();
     sensei.show('Готово! Птица — в бой: Кагэро попробует украсть эту печать. Тигр — выковать ещё', 'good', now, { lock: 2000, ttl: 4500 });
+    senseiVoice('se_forge_done');
   },
 
   setMeter(acc, pass) {

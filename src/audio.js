@@ -193,6 +193,7 @@ function trySoundFile(name) {
 
 let voiceSeq = 0;
 let currentVoice = null;
+let pendingSeq = 0; // реплика запущена, но её файл ещё догружается
 /** Журнал запусков озвучки — для автотеста синхронизации. */
 export const voiceLog = [];
 
@@ -221,7 +222,9 @@ export async function playVoice(id) {
   if (!ensureContext()) return 0;
   stopVoice();
   const seq = voiceSeq;
+  pendingSeq = seq;
   const buf = await loadBuffer(`./voices/${file}`);
+  if (pendingSeq === seq) pendingSeq = 0;
   // пока файл грузился, началась другая реплика — эту уже не играем
   if (seq !== voiceSeq || !buf || !ready()) return 0;
   duckMusic(buf.duration + 0.2);
@@ -236,6 +239,32 @@ export async function playVoice(id) {
   };
   voiceLog.push({ id, at: performance.now(), dur: buf.duration });
   return buf.duration;
+}
+
+const senseiLast = new Map();
+
+/**
+ * Реплика сенсея в бою и на уроках: не перебивает звучащий выкрик или реплику героя —
+ * дожидается её конца; если за это время началась другая реплика, эта отменяется.
+ * cooldownMs — не повторять ту же реплику чаще (для подсказок, которые могут сработать на каждом кадре).
+ */
+export function senseiVoice(id, cooldownMs = 0) {
+  if (!hasVoice(id) || !enabled) return;
+  const t = performance.now();
+  if (cooldownMs && t - (senseiLast.get(id) ?? -Infinity) < cooldownMs) return;
+  senseiLast.set(id, t);
+  const seq = voiceSeq;
+  const tryPlay = (tries = 0) => {
+    if (seq !== voiceSeq) return; // началась другая реплика — эту не играем
+    if (currentVoice) {
+      currentVoice.src.addEventListener('ended', () => setTimeout(() => tryPlay(tries), 120), { once: true });
+    } else if (pendingSeq === voiceSeq && tries < 40) {
+      setTimeout(() => tryPlay(tries + 1), 50); // выкрик героя ещё грузится — не перебиваем его
+    } else {
+      playVoice(id);
+    }
+  };
+  tryPlay();
 }
 
 /** Заранее подгрузить озвучку (например, всех реплик сцены). */
