@@ -24,7 +24,7 @@ ROLE = {
     's5_1': 'boss', 'end_1': 'boss',
     'cast_fire': 'cast', 'cast_lightning': 'cast', 'cast_shield': 'cast', 'cast_sphere': 'cast',
     'hero_hurt': 'hurt', 'combo': 'cast',
-    'cast_wind': 'cast', 'cast_dragon': 'cast', 'cast_forged': 'cast',
+    'cast_wind': 'cast', 'cast_dragon': 'cast', 'cast_forged': 'clear', 'u_read_won': 'clear',
     # финал: новые реплики сенсея и Кагэро
     'g_ready': 'sensei', 'f_1': 'sensei', 'f_2': 'sensei',
     'f_3': 'boss',
@@ -54,7 +54,7 @@ def decode(src: Path):
     return np.frombuffer(raw, dtype=np.float32).copy()
 
 
-def gate_trim(x, keep_gap=0.28, max_gap=0.45, pad=0.07):
+def gate_trim(x, keep_gap=0.28, max_gap=0.45, pad=0.15):
     """Обрезает тишину по краям и укорачивает длинные паузы внутри.
     Порог считается от шума конкретной записи (у всех разный микрофон и комната)."""
     win = int(SR * 0.02)
@@ -100,8 +100,11 @@ def gate_trim(x, keep_gap=0.28, max_gap=0.45, pad=0.07):
 # Эффекты персонажей. Герои — живой голос с лёгким «залом», злодеи — ниже и мрачнее.
 FX = {
     'hero': 'equalizer=f=3000:t=q:w=1.2:g=3,aecho=0.8:0.35:45|90:0.18|0.10',
+    # эхо у выкриков слабее, чем в первой записи: короткие слова («Клинок») иначе смазываются
     'cast': ('equalizer=f=120:t=q:w=1:g=4,equalizer=f=3200:t=q:w=1.2:g=4,aexciter=amount=2:drive=6,'
-             'aecho=0.85:0.55:70|140|260:0.35|0.22|0.12,asoftclip=type=tanh'),
+             'aecho=0.85:0.4:90|200:0.22|0.12,asoftclip=type=tanh'),
+    # почти сухой голос — для быстрых фраз, где согласные теряются даже в лёгком эхе
+    'clear': 'equalizer=f=3000:t=q:w=1.2:g=3,aecho=0.8:0.25:40:0.08',
     'hurt': 'equalizer=f=200:t=q:w=1:g=3,aecho=0.8:0.4:60|120:0.25|0.12',
     'sensei': 'rubberband=pitch=0.9:formant=preserved,equalizer=f=250:t=q:w=1:g=3,aecho=0.8:0.6:90|180|320:0.30|0.20|0.12',
     'scout': 'rubberband=pitch=0.92,equalizer=f=900:t=q:w=1.5:g=4,highpass=f=180,aecho=0.8:0.3:35:0.2',
