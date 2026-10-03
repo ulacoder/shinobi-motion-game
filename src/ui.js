@@ -93,6 +93,7 @@ export class GestureChoice {
     let active = null;
     let bestAcc = 0;
     for (const id of Object.keys(this.actions)) {
+      if (!SEALS[id]) continue; // «в меню» — не печать: его ведёт жест «окей» двумя руками (controls.js)
       const ev = evaluateSeal(id, hands);
       if (ev.passed && ev.accuracy > bestAcc) {
         active = id;
@@ -235,12 +236,40 @@ export class Overlay {
         ctx.stroke();
       }
       if (bad) {
-        ctx.strokeStyle = '#ff5a48';
-        ctx.lineWidth = 8 * k;
+        // Неверный палец — главная подсказка игры, и её смотрят через сжатую демонстрацию экрана:
+        // толстая красная линия на тёмной обводке, мягкое свечение и пульсирующее кольцо на кончике.
+        const pulse = 0.5 + 0.5 * Math.sin(now / 150);
         for (const [finger, idx] of Object.entries(FINGER_POINTS)) {
           if (!bad.has(`${hand.side}:${finger}`)) continue;
+          const line = () => {
+            ctx.beginPath();
+            idx.forEach((i, n) => (n ? ctx.lineTo(pts[i].x, pts[i].y) : ctx.moveTo(pts[i].x, pts[i].y)));
+          };
+          ctx.strokeStyle = 'rgba(28, 6, 6, 0.85)';
+          ctx.lineWidth = 15 * k;
+          line();
+          ctx.stroke();
+          ctx.save();
+          if (this.quality !== 0) {
+            ctx.shadowColor = 'rgba(255, 74, 58, 0.9)';
+            ctx.shadowBlur = (10 + 8 * pulse) * dpr;
+          }
+          ctx.strokeStyle = '#ff4a3a';
+          ctx.lineWidth = 9 * k;
+          line();
+          ctx.stroke();
+          ctx.restore();
+          const tip = pts[idx[idx.length - 1]];
+          const r = (12 + 4 * pulse) * k;
+          ctx.lineWidth = 7 * k;
+          ctx.strokeStyle = 'rgba(28, 6, 6, 0.8)';
           ctx.beginPath();
-          idx.forEach((i, k) => (k ? ctx.lineTo(pts[i].x, pts[i].y) : ctx.moveTo(pts[i].x, pts[i].y)));
+          ctx.arc(tip.x, tip.y, r, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.lineWidth = 3.5 * k;
+          ctx.strokeStyle = '#ff4a3a';
+          ctx.beginPath();
+          ctx.arc(tip.x, tip.y, r, 0, Math.PI * 2);
           ctx.stroke();
         }
       }

@@ -18,6 +18,8 @@ export const chapters = {
     this.picker.reset();
     this.lastCount = -1;
     arena.setPlace('night');
+    // превью камеры здесь высокое и луну не спасти — убираем её за край неба
+    arena.setOrb({ x: 0.5, y: -1 });
     arena.showEnemy(null);
     music.play('calm');
     music.setPlace('night');

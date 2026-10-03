@@ -80,9 +80,10 @@ export const results = {
     renderRecords($('records-results'), getRecords(), id);
     this.res = res;
     this.choice ??= new GestureChoice($('screen-results'), {
-      snake: () => go('menu'),
+      menu: () => go('menu'),
       tiger: () => startStory({ quick: this.res.quick, chapter: this.res.chapter || 1 }),
-      dog: () => go('dojo'),
+      // раскрытые ладони везде значат «учиться / дальше»: в меню это тоже вход в додзё
+      snake: () => go('dojo'),
     });
     this.choice.reset();
     arena.setPlace(res.win ? 'dawn' : 'night');

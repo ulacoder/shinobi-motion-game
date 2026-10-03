@@ -11,6 +11,7 @@ import { $, fillSealIcons } from './ui.js';
 import { app, video, arena, overlay, sensei, brightness, state, go, pct, SHORT, recorder } from './app/context.js';
 import { updateBackGesture, updateSoundHint } from './app/controls.js';
 import { HandSmoother } from './herohands.js';
+import { darkButSeen } from './quality.js';
 import { startStory } from './app/story.js';
 import { menu } from './screens/menu.js';
 import { dojo } from './screens/dojo.js';
@@ -23,6 +24,8 @@ import { chapters } from './screens/chapters.js';
 import { mangaScreen } from './screens/manga.js';
 import { path } from './screens/path.js';
 import './screens/duel.js';
+
+const camDark = $('cam-dark');
 
 fillSealIcons();
 
@@ -181,6 +184,7 @@ function loop(now) {
     }
     state.lastBright = brightness.sample(video, now);
   }
+  camDark.hidden = !darkButSeen(state.hands, state.lastBright);
 
   // кадры камеры для замедленного повтора и главы манги — только в бою и в сюжетных жестах
   const rec = state.controller?.records || (state.controller === scene && scene.wait);

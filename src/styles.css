@@ -402,6 +402,38 @@ button {
   font-size: 22px;
 }
 
+.cam-dark[hidden] {
+  display: none;
+}
+
+/* темно, но руки видны: тихий значок у превью вместо плашки сенсея */
+.cam-dark {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 10px;
+  background: rgba(21, 23, 53, 0.78);
+  color: var(--paper);
+  font-weight: 800;
+  font-size: 14px;
+}
+
+.cam-dark span {
+  font-family: var(--font-kanji);
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  background: var(--gold);
+  color: var(--ink);
+  font-size: 16px;
+}
+
 .cam-seal.near .cam-seal-glyph {
   background: transparent;
   color: var(--gold);
@@ -3952,4 +3984,111 @@ button {
     transform: translateX(-50%);
     max-height: calc(60vh);
   }
+}
+
+/* =====================================================================
+   Финальная полировка UX (фидбэк перед финалом)
+   ===================================================================== */
+
+/* звук: где превью камеры стоит в правом верхнем углу, кнопка уходит вниз, чтобы не закрывать руки */
+@media (min-width: 821px) and (min-aspect-ratio: 1/1) {
+  #app[data-screen='scene'] .icon-btn,
+  #app[data-screen='path'] .icon-btn,
+  #app[data-screen='results'] .icon-btn {
+    top: auto;
+    bottom: calc(var(--gutter) * 0.6);
+  }
+}
+
+/* подсказка про звук — короткий ярлык под кнопкой (над ней, если кнопка внизу), а не абзац поверх экрана */
+.sound-hint {
+  top: calc(var(--gutter) * 0.6 + 48px);
+  right: calc(var(--gutter) * 0.6);
+  max-width: none;
+  white-space: nowrap;
+  padding: 5px 12px;
+  font-size: 0.85rem;
+  box-shadow: 3px 3px 0 var(--seal);
+}
+
+@media (min-width: 821px) and (min-aspect-ratio: 1/1) {
+  #app[data-screen='battle'] .sound-hint,
+  #app[data-screen='scene'] .sound-hint,
+  #app[data-screen='path'] .sound-hint,
+  #app[data-screen='results'] .sound-hint {
+    top: auto;
+    bottom: calc(var(--gutter) * 0.6 + 48px);
+  }
+}
+
+/* телефон: камера на всю ширину сверху — ярлык в одну строку с кнопкой, слева от неё */
+@media (max-width: 820px), (max-aspect-ratio: 1/1) {
+  .sound-hint {
+    top: calc(var(--gutter) * 0.6 + 4px);
+    right: calc(var(--gutter) * 0.6 + 46px);
+    padding: 4px 10px;
+    font-size: 0.8rem;
+  }
+}
+
+/* бой: плашка сенсея ниже полосок HP и названия этапа, в одну строку пошире */
+@media (min-width: 821px) and (min-aspect-ratio: 1/1) {
+  #app[data-screen='battle'] .sensei {
+    top: calc(var(--gutter) + 78px);
+    max-width: min(760px, calc(100vw - 2 * var(--gutter) - 340px));
+    left: calc(50% - 150px);
+    padding: 8px 18px 8px 8px;
+  }
+
+  #app[data-screen='battle'] .sensei-mark {
+    width: 34px;
+    height: 34px;
+    font-size: 18px;
+  }
+
+  #app[data-screen='battle'] .steal {
+    top: 26%;
+  }
+}
+
+/* Meet сжимает картинку: на ноутбуке ни одной подписи меньше 14px */
+@media (min-width: 821px) and (min-aspect-ratio: 1/1) {
+  .kicker,
+  .stage-label,
+  .check-title,
+  .chip,
+  .tech-seq,
+  .hand-cue-text span,
+  .fighter-name small,
+  .chakra-label,
+  .sound-hint,
+  .choice-text span {
+    font-size: max(0.9rem, 14px);
+  }
+
+  .check-title,
+  .tech-seq {
+    color: #4a3d34;
+  }
+}
+
+/* додзё: пять печатей — квадратные оттиски, два приёма — круглые и за чертой */
+.steps li.move {
+  border-radius: 50%;
+}
+
+.steps li:not(.move) + li.move {
+  position: relative;
+  margin-left: 14px;
+}
+
+.steps li:not(.move) + li.move::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 6px;
+  bottom: 6px;
+  width: 2px;
+  border-radius: 1px;
+  background: rgba(243, 238, 226, 0.35);
 }
