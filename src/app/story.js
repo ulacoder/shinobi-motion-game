@@ -3,6 +3,7 @@
 import { STORY, PLAYER_MAX_HP, emptyStats, scoreRun, topMistakes } from '../battle.js';
 import { randomNinjaName, addRecord } from '../storage.js';
 import { state, go } from './context.js';
+import { bestSignature } from '../hanko.js';
 
 export const FIGHTS_TOTAL = STORY.filter((s) => s.type === 'fight').length;
 
@@ -79,6 +80,8 @@ export function finishRun(win, reason) {
     quick: state.run.quick,
     chapter: state.run.chapter,
     moments: state.run.moments ?? [],
+    // «ханко-ладонь»: лучшая печать похода — подпись игрока на итогах и в манге
+    signature: bestSignature(state.run.bestForms),
   };
   // рекорд сохраняем сразу: игрок может уйти в меню прямо со страницы манги
   const { id } = addRecord({ name: res.name, score, win, time: Math.round(timeSec), acc: avgAcc, stage: res.stage });

@@ -60,7 +60,7 @@ function hand(fingers, cx, cy, { mirror = false, scale = 1, fills = null, ok = f
 const FIST = { thumb: 'down', index: 'down', middle: 'down', ring: 'down', pinky: 'down' };
 
 /** SVG-иконка печати: как держать обе руки. */
-export function sealIcon(sealId, { size = 64, title = true } = {}) {
+export function sealIcon(sealId, { size = 64, title = true, skin = SKIN, ink = INK } = {}) {
   const seal = SEALS[sealId];
   let body = '';
   if (sealId === 'dragon') {
@@ -75,7 +75,7 @@ export function sealIcon(sealId, { size = 64, title = true } = {}) {
   }
   return `<svg class="seal-icon" viewBox="-10 -4 120 90" width="${size}" height="${Math.round(size * 0.86)}" role="img" aria-label="${seal.name}">
     ${title ? `<title>${seal.name}: ${seal.how}</title>` : ''}
-    <g fill="${SKIN}" stroke="${INK}" stroke-width="2.4" stroke-linejoin="round">${body}</g>
+    <g fill="${skin}" stroke="${ink}" stroke-width="2.4" stroke-linejoin="round">${body}</g>
   </svg>`;
 }
 
@@ -89,8 +89,9 @@ export function fingersIcon(n, { size = 64 } = {}) {
     1: { index: 'up' },
     2: { index: 'up', middle: 'up' },
     3: { index: 'up', middle: 'up', ring: 'up' },
+    4: { index: 'up', middle: 'up', ring: 'up', pinky: 'up' },
   };
-  return svgWrap(hand(sets[n] ?? {}, 50, 58, { scale: 1.25 }), { size, label: `Глава ${n}: подними пальцев — ${n}`, viewBox: '12 -2 76 84' });
+  return svgWrap(hand(sets[n] ?? {}, 50, 58, { scale: 1.25 }), { size, label: `Подними пальцев — ${n}`, viewBox: '12 -2 76 84' });
 }
 
 /** Жест «в меню»: обе руки показывают «окей». */

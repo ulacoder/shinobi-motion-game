@@ -44,3 +44,33 @@ test('глава манги: самые важные моменты, но в п�
   assert.deepEqual(layoutRows(5), [1, 2, 2]);
   assert.deepEqual(layoutRows(2), [1, 1]);
 });
+
+test('Кагэро читает руки: слабый палец из отчёта ладони и печать, где он важен', async () => {
+  const { pickWeakFinger, COUNTER_SEAL, readPassed, fingerScore } = await import('../src/readhands.js');
+  assert.deepEqual(pickWeakFinger({ 'left:ring': 3, 'right:index': 1 }).finger, 'ring');
+  assert.equal(pickWeakFinger({}).guessed, true);
+  assert.equal(COUNTER_SEAL.ring, 'tiger');
+  const TIGER = { thumb: 'down', index: 'up', middle: 'up', ring: 'down', pinky: 'down' };
+  const good = evaluateSeal('tiger', hands([{ state: TIGER, cx: 0.42, cy: 0.45 }, { state: TIGER, cx: 0.58, cy: 0.45 }]));
+  assert.ok(readPassed(good, 'left', 'ring'));
+  // безымянный на левой руке выпрямлен — печать не засчитана именно из-за него
+  // (кадр зеркальный: cx 0.58 в кадре камеры — левая рука на экране)
+  const bad = evaluateSeal('tiger', hands([{ state: TIGER, cx: 0.42, cy: 0.45 }, { state: { ...TIGER, ring: 'up' }, cx: 0.58, cy: 0.45 }]));
+  assert.ok(fingerScore(bad, 'left', 'ring') < 0.5);
+  assert.equal(readPassed(bad, 'left', 'ring'), false);
+});
+
+test('Дуэль с тенью: 5 раундов без повторов подряд, своя печать в конце, ранги', async () => {
+  const { duelRounds, duelRank } = await import('../src/duel.js');
+  let seed = 3;
+  const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+  const r = duelRounds(rand, true);
+  assert.equal(r.length, 5);
+  assert.equal(r[4], 'forged');
+  for (let i = 1; i < 4; i++) assert.notEqual(r[i], r[i - 1]);
+  const win = (ms) => ({ won: true, ms, acc: 0.9 });
+  assert.equal(duelRank([win(1000), win(1200), win(900), win(1500), win(1100)]).kanji, '極');
+  assert.equal(duelRank([win(2000), win(2200), win(1900), win(2500), win(2100)]).kanji, '影');
+  assert.equal(duelRank([win(2000), win(2200), win(1900), { won: false }, { won: false }]).kanji, '忍');
+  assert.equal(duelRank([{ won: false }, { won: false }, win(1900), { won: false }, { won: false }]).kanji, '修');
+});

@@ -94,6 +94,7 @@ button {
 #app[data-screen='dojo'] #screen-dojo,
 #app[data-screen='battle'] #screen-battle,
 #app[data-screen='results'] #screen-results,
+#app[data-screen='duel'] #screen-duel,
 #app[data-screen='path'] #screen-path {
   display: block;
 }
@@ -3742,5 +3743,213 @@ button {
   .scene-portrait {
     max-height: 46vh;
     width: auto;
+  }
+}
+
+/* ---------- «Кагэро читает твои руки»: та же манга-панель, что у кражи печати ---------- */
+
+.rh-quote {
+  margin: 0;
+  font-weight: 800;
+  font-size: 1.1rem;
+  font-style: italic;
+  text-align: center;
+  color: var(--seal-dark);
+}
+
+.rh-palm {
+  width: min(320px, 70vw);
+}
+
+.rh-palm svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.readhands.won .steal-title {
+  text-shadow: 3px 3px 0 #3f9a5a, 6px 6px 0 rgba(0, 0, 0, 0.5);
+}
+
+#rh-fill {
+  height: 100%;
+  background: var(--seal);
+}
+
+@media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+  .rh-palm {
+    width: 200px;
+  }
+}
+
+/* ---------- ханко-ладонь: подпись игрока на итогах ---------- */
+
+.results {
+  position: relative;
+}
+
+.res-sign {
+  position: absolute;
+  top: 14px;
+  right: 18px;
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+
+.res-sign[hidden] {
+  display: none;
+}
+
+.res-sign canvas {
+  width: 116px;
+  height: 116px;
+  mix-blend-mode: multiply;
+}
+
+.res-sign figcaption {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--seal-dark);
+}
+
+.res-sign.stamped {
+  animation: sign-stamp 0.55s cubic-bezier(0.2, 1.5, 0.4, 1) 0.35s both;
+}
+
+@keyframes sign-stamp {
+  0% {
+    opacity: 0;
+    transform: rotate(-6deg) scale(2.4);
+  }
+  70% {
+    opacity: 1;
+    transform: rotate(9deg) scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: rotate(8deg) scale(1);
+  }
+}
+
+@media (max-width: 820px), (max-aspect-ratio: 1/1) {
+  .res-sign canvas {
+    width: 72px;
+    height: 72px;
+  }
+}
+
+.results:has(.res-sign:not([hidden])) :is(.kicker, #res-title, .score, .res-stage) {
+  padding-right: 124px;
+}
+
+@media (max-width: 820px), (max-aspect-ratio: 1/1) {
+  .results:has(.res-sign:not([hidden])) :is(.kicker, #res-title, .score, .res-stage) {
+    padding-right: 80px;
+  }
+}
+
+/* ---------- дуэль с тенью ---------- */
+
+#app[data-screen='duel'] .cam {
+  left: var(--gutter);
+  bottom: var(--gutter);
+  width: min(34vw, 520px, calc(40vh * var(--cam-ar)));
+}
+
+.duel-panel {
+  top: 9%;
+}
+
+.duel-panel[hidden] {
+  display: none;
+}
+
+.duel-panel.pop {
+  animation: panel-in 0.35s cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+
+.duel-shadow svg {
+  display: block;
+  width: min(300px, 60vw);
+  height: auto;
+  filter: drop-shadow(0 0 14px rgba(156, 34, 25, 0.9));
+}
+
+.duel-panel canvas[hidden] {
+  display: none;
+}
+
+.duel-panel.won .steal-title {
+  text-shadow: 3px 3px 0 #3f9a5a, 6px 6px 0 rgba(0, 0, 0, 0.5);
+}
+
+.duel-panel.lost {
+  filter: grayscale(0.6);
+}
+
+#duel-fill {
+  height: 100%;
+  background: var(--seal);
+}
+
+.duel-dots li.miss {
+  background: rgba(42, 31, 26, 0.6);
+  color: var(--paper);
+}
+
+.duel-result {
+  position: absolute;
+  right: var(--gutter);
+  top: 50%;
+  transform: translateY(-50%);
+  max-height: calc(100vh - 2 * var(--gutter));
+  overflow-y: auto;
+  scrollbar-width: none;
+  width: min(620px, calc(100vw - 2 * var(--gutter)));
+  display: grid;
+  gap: 10px;
+}
+
+.duel-result[hidden] {
+  display: none;
+}
+
+.duel-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 4px;
+  font-weight: 700;
+}
+
+.duel-list li.miss {
+  color: var(--ink-soft);
+  font-weight: 500;
+}
+
+#duel-result .duel-choices {
+  position: static;
+  transform: none;
+  width: auto;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-height: 520px) and (min-aspect-ratio: 1/1) {
+  .duel-shadow svg {
+    width: 180px;
+  }
+}
+
+@media (max-width: 820px), (max-aspect-ratio: 1/1) {
+  .duel-result {
+    right: auto;
+    left: 50%;
+    top: var(--gutter);
+    transform: translateX(-50%);
+    max-height: calc(60vh);
   }
 }

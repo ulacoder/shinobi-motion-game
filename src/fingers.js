@@ -44,7 +44,7 @@ export class FingerChoice {
         count: 0,
         progress: 0,
         chosen: null,
-        hint: ok ? null : hands.length ? 'Покажи пальцы одной рукой — вторую опусти' : 'Подними одну руку и покажи 1, 2 или 3 пальца',
+        hint: ok ? null : hands.length ? 'Покажи пальцы одной рукой — вторую опусти' : `Подними одну руку и покажи ${this.allowed.join(', ').replace(/, (\d)$/, ' или $1')} пальца`,
       };
     }
     if (!this.armed) {
@@ -64,7 +64,8 @@ export class FingerChoice {
       this.locked = true;
     }
     const word = count === 4 ? 'четыре пальца' : 'пять пальцев';
-    const hint = allowedNow ? null : count === 0 ? 'Это кулак: подними 1, 2 или 3 пальца' : `Это ${word} — для глав нужно 1, 2 или 3`;
+    const list = this.allowed.join(', ').replace(/, (\d)$/, ' или $1');
+    const hint = allowedNow ? null : count === 0 ? `Это кулак: подними ${list} пальца` : `Это ${word} — для выбора нужно ${list}`;
     return { count, progress, chosen, hint };
   }
 }

@@ -3,7 +3,7 @@
 import { FingerChoice } from '../fingers.js';
 import { music } from '../music.js';
 import { sfx } from '../audio.js';
-import { arena, sensei, state, registerScreen, reportFrameIssue } from '../app/context.js';
+import { arena, sensei, state, go, registerScreen, reportFrameIssue } from '../app/context.js';
 import { startStory } from '../app/story.js';
 
 import { fingersIcon } from '../icons.js';
@@ -12,7 +12,7 @@ const cards = () => [...document.querySelectorAll('#screen-chapters [data-chapte
 for (const node of document.querySelectorAll('[data-fingers]')) node.innerHTML = fingersIcon(Number(node.dataset.fingers), { size: 60 });
 
 export const chapters = {
-  picker: new FingerChoice({ holdMs: 1000 }),
+  picker: new FingerChoice({ holdMs: 1000, allowed: [1, 2, 3, 4] }),
 
   enter() {
     this.picker.reset();
@@ -21,7 +21,7 @@ export const chapters = {
     arena.showEnemy(null);
     music.play('calm');
     music.setPlace('night');
-    sensei.show('Покажи 1, 2 или 3 пальца одной рукой — это номер главы', 'info', performance.now(), { ttl: 3500 });
+    sensei.show('Покажи 1, 2 или 3 пальца — номер главы. 4 пальца — дуэль с тенью', 'info', performance.now(), { ttl: 3500 });
   },
 
   exit() {
@@ -33,6 +33,8 @@ export const chapters = {
 
   pick(chapter) {
     sfx.success();
+    // 4 пальца — не глава, а испытание «Дуэль с тенью»
+    if (chapter === 4) return go('duel');
     startStory({ chapter });
   },
 

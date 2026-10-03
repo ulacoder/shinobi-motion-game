@@ -22,6 +22,7 @@ import { forge, forgeDebug } from './screens/forge.js';
 import { chapters } from './screens/chapters.js';
 import { mangaScreen } from './screens/manga.js';
 import { path } from './screens/path.js';
+import './screens/duel.js';
 
 fillSealIcons();
 
@@ -99,7 +100,7 @@ addEventListener('keydown', (e) => {
     go('menu');
   } else if (screen === 'forge' && (e.key === 'r' || e.key === 'R' || e.key === 'к' || e.key === 'К')) {
     forge.restart();
-  } else if (screen === 'chapters' && /^[1-3]$/.test(e.key)) {
+  } else if (screen === 'chapters' && /^[1-4]$/.test(e.key)) {
     chapters.pick(Number(e.key));
   } else if ((screen === 'menu' || screen === 'results' || screen === 'manga' || screen === 'path') && /^[1-5]$/.test(e.key)) {
     const buttons = [...$(`screen-${screen}`).querySelectorAll('[data-choice]')];

@@ -15,6 +15,7 @@ import {
 } from '../app/context.js';
 import { killcam, REPLAY_MS } from './killcam.js';
 import { stolen } from './stolen.js';
+import { weakfinger } from './weakfinger.js';
 import { nextStep, finishRun } from '../app/story.js';
 import { cutin } from './cutin.js';
 import { forgedTechnique } from '../forge.js';
@@ -45,6 +46,9 @@ export const fight = {
     this.forgedSince = 0;
     this.steal = null;
     this.stealDone = false;
+    this.read = null;
+    this.readDone = false;
+    $('readhands').hidden = true;
     this.records = true; // главный цикл пишет кадры камеры для повтора и манги
     recorder.clear();
     recorder.release(this.clip);
@@ -107,6 +111,7 @@ export const fight = {
   exit() {
     $('countdown').hidden = true;
     $('steal').hidden = true;
+    $('readhands').hidden = true;
     $('replay').hidden = true;
     recorder.release(this.clip);
     this.clip = null;
@@ -182,9 +187,12 @@ export const fight = {
             sfx.hurt();
             playVoice('hero_hurt');
             moment({ caption: 'Ай! Пропустил удар…', sfx: 'ドン!', priority: 1, once: 'hurt' });
-            const hint = 'Удар пропущен: когда под врагом растёт красная полоса, ставь щит (Собака → Дракон)';
-            b.noteMistake(hint, now);
-            sensei.show(hint, 'warn', now, { lock: 1800, ttl: 3500 });
+            // удар краденой печатью или по слабому пальцу — свои подсказки, не про щит
+            if (!e.stolen) {
+              const hint = 'Удар пропущен: когда под врагом растёт красная полоса, ставь щит (Собака → Дракон)';
+              b.noteMistake(hint, now);
+              sensei.show(hint, 'warn', now, { lock: 1800, ttl: 3500 });
+            }
           }
           break;
         case 'combo-break':
@@ -219,6 +227,8 @@ export const fight = {
           // если босс пал во время кражи печати — панель кражи убираем, повтор идёт поверх чистой сцены
           this.steal = null;
           $('steal').hidden = true;
+          this.read = null;
+          $('readhands').hidden = true;
           this.endAt = now + 2300;
           // замедленный повтор добивающей печати
           if (this.clip) {
@@ -346,7 +356,10 @@ export const fight = {
     const drawingMode = b.ultimateReady && state.hands.length === 1 && (isPointing(state.hands[0]) || this.circle.drawing);
     // круг рисуют одной рукой: появилась вторая рука (например, складывают Собаку для щита) —
     // рисование сразу отменяется и работают печати
-    if (drawingMode || (this.circle.drawing && b.ultimateReady && state.hands.length === 0)) {
+    if (this.read) {
+      // «Кагэро читает руки»: пока идёт событие, проверяем только его печать
+      this.updateRead(now, issue);
+    } else if (drawingMode || (this.circle.drawing && b.ultimateReady && state.hands.length === 0)) {
       this.overlayTone = 'near';
       camSeal.hidden = true;
       const r = this.circle.update(state.hands, now);
@@ -419,7 +432,9 @@ export const fight = {
     }
 
     // В ярости Кагэро крадёт печать, которую игрок выковал в Кузнице
-    if (this.enemy.boss && this.forged && b.phase2 && !this.stealDone && !this.steal && this.phase2At && now - this.phase2At > 2600) {
+    // «Кагэро читает твои руки» — по данным отчёта ладони
+    if (this.readDue(now)) this.startRead(now);
+    if (this.enemy.boss && this.forged && b.phase2 && !this.stealDone && !this.steal && !this.read && this.phase2At && now - this.phase2At > 2600) {
       this.startSteal(now);
     }
     if (this.steal) {
@@ -451,6 +466,6 @@ $('replay').addEventListener('click', () => fight.skipReplay());
 
 // Повтор добивающей печати и моменты манги — src/screens/killcam.js;
 // своя печать из Кузницы и кража печати Кагэро — src/screens/stolen.js.
-Object.assign(fight, killcam, stolen);
+Object.assign(fight, killcam, stolen, weakfinger);
 
 registerScreen('battle', fight);

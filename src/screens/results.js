@@ -8,6 +8,7 @@ import { getRecords } from '../storage.js';
 import { $, el, GestureChoice, renderRecords, formatTime, drawHandForm } from '../ui.js';
 import { arena, state, go, registerScreen, pct } from '../app/context.js';
 import { renderPalmReport, describeWorst } from '../palmreport.js';
+import { drawHandHanko } from '../hanko.js';
 import { startStory, FIGHTS_TOTAL } from '../app/story.js';
 
 export const results = {
@@ -53,6 +54,20 @@ export const results = {
       drawHandForm(c, form);
       item.append(c, el('figcaption', '', `${SEALS[sealId].kanji} ${SEALS[sealId].name} · ${pct(accuracy)}`));
       gallery.append(item);
+    }
+    // Ханко-ладонь: лучшая печать боя — оттиском, как подпись на документе
+    const sign = $('res-sign');
+    sign.hidden = !res.signature;
+    if (res.signature) {
+      const c = $('res-hanko');
+      const ctx = c.getContext('2d');
+      ctx.clearRect(0, 0, c.width, c.height);
+      drawHandHanko(ctx, res.signature.form, 0, 0, c.width, { rot: 0 });
+      $('res-sign-cap').textContent = `${SEALS[res.signature.seal].name} · ${pct(res.signature.accuracy)}`;
+      sign.classList.remove('stamped');
+      void sign.offsetWidth;
+      sign.classList.add('stamped');
+      setTimeout(() => sfx.seal(), 650);
     }
     // Отчёт ладони: какие пальцы чаще всего подводили
     renderPalmReport($('palm-report'), res.fingerMiss ?? {});

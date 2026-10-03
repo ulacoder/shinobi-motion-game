@@ -12,7 +12,7 @@ export const mangaScreen = {
     this.res = res;
     const date = new Date().toLocaleDateString('ru-RU');
     const chapterTitle = res.win ? (res.quick ? 'Глава: бой с Кагэро' : 'Глава: спасение деревни') : 'Глава: продолжение следует…';
-    this.page = renderMangaPage(res.moments ?? [], { name: res.name, score: res.score, win: res.win, chapterTitle, date });
+    this.page = renderMangaPage(res.moments ?? [], { name: res.name, score: res.score, win: res.win, chapterTitle, date, signature: res.signature });
     const c = $('manga-canvas');
     c.getContext('2d').drawImage(this.page, 0, 0, c.width, c.height);
     $('manga-saved').hidden = true;

@@ -83,7 +83,7 @@
           <button class="choice" data-choice="tiger" type="button">
             <span class="choice-icon" data-seal="tiger"></span>
             <span class="choice-text">
-              <strong>Сюжет · выбор главы</strong>
+              <strong>Сюжет · главы и дуэль</strong>
               <span>Тигр: указательный и средний вверх</span>
             </span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
@@ -162,7 +162,7 @@
       <section id="screen-chapters" class="screen">
         <header class="menu-head">
           <h1 class="title title-sm">Выбери главу</h1>
-          <p class="subtitle">Покажи камере 1, 2 или 3 пальца одной рукой и держи секунду</p>
+          <p class="subtitle">Покажи камере пальцы одной рукой и держи секунду: 1–3 — глава, 4 — дуэль</p>
         </header>
         <div class="choices chapter-choices">
           <button class="choice" data-chapter="1" type="button">
@@ -178,6 +178,11 @@
           <button class="choice" data-chapter="3" type="button">
             <span class="choice-icon" data-fingers="3"></span>
             <span class="choice-text"><strong>Глава 3 · Кагэро</strong><span>Кузница и бой с владыкой Затмения. Три пальца</span></span>
+            <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+          </button>
+          <button class="choice choice-new" data-chapter="4" type="button">
+            <span class="choice-icon" data-fingers="4"></span>
+            <span class="choice-text"><strong>Дуэль с тенью <span class="hanko hanko-sm new-hanko" title="Новое">影</span></strong><span>Повтори печати тени Кагэро на время. Четыре пальца</span></span>
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
         </div>
@@ -253,6 +258,14 @@
             <span id="replay-hanko" class="hanko hanko-lg replay-hanko">寅</span>
           </div>
           <p class="replay-title"><b id="replay-name">Огненный шар</b><span id="replay-acc">Тигр — 94%</span></p>
+        </div>
+        <div id="readhands" class="steal readhands" hidden aria-live="assertive">
+          <span id="rh-hanko" class="hanko hanko-lg steal-hanko">読</span>
+          <p id="rh-title" class="steal-title">Кагэро читает твои руки</p>
+          <p id="rh-quote" class="rh-quote"></p>
+          <div id="rh-palm" class="rh-palm"></div>
+          <p id="rh-sub" class="steal-sub"></p>
+          <div class="bubble-timer steal-bar"><div id="rh-fill"></div></div>
         </div>
         <div class="hud-top">
           <div class="fighter fighter-hero">
@@ -355,6 +368,10 @@
         </aside>
         <article class="scroll results">
           <p id="res-kicker" class="kicker">Бой окончен</p>
+          <figure id="res-sign" class="res-sign" hidden>
+            <canvas id="res-hanko" width="240" height="240" aria-label="Подпись игрока: лучшая печать боя оттиском ханко"></canvas>
+            <figcaption id="res-sign-cap">подпись</figcaption>
+          </figure>
           <h2 id="res-title">Победа</h2>
           <p class="score"><span id="res-score">0</span> очков</p>
           <p id="res-stage" class="res-stage"></p>
@@ -390,6 +407,42 @@
             <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
           </button>
         </div>
+      </section>
+
+      <!-- Дуэль с тенью: повтори печать тени Кагэро, пока не догорела кисть -->
+      <section id="screen-duel" class="screen">
+        <ol id="duel-dots" class="steps duel-dots" aria-label="Загадки"></ol>
+        <div id="duel-panel" class="steal duel-panel" aria-live="polite">
+          <span class="hanko hanko-lg steal-hanko">影</span>
+          <p id="duel-title" class="steal-title">Тень Кагэро</p>
+          <div id="duel-shadow" class="duel-shadow"></div>
+          <canvas id="duel-form" width="420" height="300" hidden></canvas>
+          <p id="duel-sub" class="steal-sub"></p>
+          <div class="bubble-timer steal-bar"><div id="duel-fill"></div></div>
+        </div>
+        <article id="duel-result" class="scroll duel-result" hidden>
+          <div class="lesson-head">
+            <span id="duel-rank" class="hanko hanko-lg">影</span>
+            <div>
+              <p class="kicker">Дуэль с тенью</p>
+              <h2 id="duel-rank-title">Быстрее тени</h2>
+            </div>
+          </div>
+          <p id="duel-rank-line" class="lesson-how"></p>
+          <ol id="duel-list" class="duel-list"></ol>
+          <div class="choices choices-row duel-choices">
+            <button class="choice" data-choice="snake" type="button">
+              <span class="choice-icon" data-seal="snake"></span>
+              <span class="choice-text"><strong>В меню</strong><span>Раскрой обе ладони</span></span>
+              <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+            </button>
+            <button class="choice" data-choice="tiger" type="button">
+              <span class="choice-icon" data-seal="tiger"></span>
+              <span class="choice-text"><strong>Ещё раз</strong><span>Покажи Тигра</span></span>
+              <svg class="ring" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="19" /></svg>
+            </button>
+          </div>
+        </article>
       </section>
 
       <!-- Свиток пути: отбор → финал -->

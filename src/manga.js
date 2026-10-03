@@ -1,6 +1,8 @@
 // «Твоя глава манги»: ключевые моменты боя (стоп-кадры камеры + руки) собираются в страницу манги
 // с панелями, звуковыми надписями и репликами. Страницу можно сохранить как PNG.
 
+import { drawHandHanko } from './hanko.js';
+
 const PAPER = '#efe6cf';
 const INK = '#1a1320';
 const SEAL = '#cc3325';
@@ -75,6 +77,8 @@ export function renderMangaPage(moments, info) {
   ctx.fillStyle = '#5d4d42';
   ctx.fillText(`Герой — ${info.name}. Все кадры сняты камерой во время игры`, M, 206);
   hanko(ctx, W - M - 118, 58, 118, info.win ? '勝' : '印');
+  // подпись игрока — его лучшая печать оттиском ханко
+  if (info.signature) drawHandHanko(ctx, info.signature.form, W - M - 118 - 150, 46, 140, { rot: 0.1 });
 
   // панели
   const picked = pickMoments(moments);
