@@ -62,6 +62,7 @@ export const stolen = {
     sfx.roar();
     arena.label('奪!', '#ff4d3a');
     moment({ who: 'Кагэро', caption: 'Твоя печать теперь моя!', sfx: '奪!', priority: 3, kanji: '奪' });
+    playVoice('k_steal');
     sensei.show('Кагэро: «Твоя печать теперь моя!» Повтори её первым!', 'warn', now, { lock: 2500, ttl: 5000 });
   },
 

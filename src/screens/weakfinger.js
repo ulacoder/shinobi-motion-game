@@ -46,6 +46,7 @@ export const weakfinger = {
     sfx.roar();
     arena.label('読!', '#ff4d3a');
     moment({ who: 'Кагэро', caption: `Твой ${finger} палец дрожит!`, sfx: 'ギロッ!', priority: 3, kanji: '読', once: 'read' });
+    playVoice(weak.guessed ? 'k_read_clean' : 'k_read');
     sensei.show(`Кагэро бьёт по слабому месту! Сложи «${SEALS[seal].name}»: ${finger} ${where} — ${stateWord}`, 'warn', now, {
       lock: 2500,
       ttl: 5000,

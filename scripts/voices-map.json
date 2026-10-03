@@ -33,5 +33,11 @@
  "audio_2026-10-04_01-23-10.ogg": "cast_dragon",
  "audio_2026-10-04_01-23-18.ogg": "cast_forged",
  "audio_2026-10-04_01-23-39.ogg": "u_return",
- "audio_2026-10-04_01-23-59.ogg": "u_read_won"
+ "audio_2026-10-04_01-23-59.ogg": "u_read_won",
+ "audio_2026-10-04_01-34-06.ogg": "k_read_clean",
+ "audio_2026-10-04_01-34-09.ogg": "k_steal",
+ "audio_2026-10-04_01-34-12.ogg": "k_read",
+ "audio_2026-10-04_01-34-14.ogg": "f_3",
+ "audio_2026-10-04_01-38-45.ogg": "g_friend",
+ "audio_2026-10-04_01-38-47.ogg": "g_tiger"
 }
