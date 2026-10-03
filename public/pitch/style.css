@@ -123,7 +123,8 @@ button { font-family: inherit; }
 }
 #cam.size-s { --cam-w: 220px; }
 #cam.size-m { --cam-w: 320px; }
-#cam.size-l { --cam-w: 460px; }
+#cam.size-l { --cam-w: 480px; }
+#cam.size-xl { --cam-w: 680px; }
 #cam.size-s #camHud, #cam.size-s #camFps, #cam.size-s #btnExpo { display: none; }
 #cam.size-m #camFps { display: none; }
 #cam.dim { opacity: .55; }
@@ -266,3 +267,11 @@ kbd {
 }
 
 body.no-cursor { cursor: none; }
+
+/* ---------- Чистое окно камеры для выступления ----------
+   Показываем живое видео без полос и затемнения: жюри должно хорошо видеть команду.
+   Скорректированный по свету кадр по-прежнему уходит в распознавание, но не на экран. */
+#scan { display: none; }
+#video { left: 0; top: 0; width: 100%; height: 100%; opacity: 1; object-fit: cover; transform: scaleX(-1); }
+#frame { visibility: hidden; }
+#camHud { display: none; }

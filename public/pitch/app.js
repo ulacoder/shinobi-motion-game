@@ -462,26 +462,8 @@ function renderSkeleton(now) {
   sctx.clearRect(0, 0, W, H);
   const P = (p) => [(1 - p.x) * W, p.y * H];
 
-  // зона управления
-  const half = zone.size / 2;
-  sctx.save();
-  sctx.setLineDash([6 * k, 6 * k]);
-  sctx.strokeStyle = 'rgba(243,232,202,.28)'; sctx.lineWidth = 1.2 * k;
-  sctx.strokeRect((zone.cx - half) * W, (zone.cy - half) * H, zone.size * W, zone.size * H);
-  sctx.setLineDash([]);
-  sctx.fillStyle = 'rgba(243,232,202,.45)';
-  sctx.font = `700 ${8.5 * k}px Rubik, sans-serif`;
-  sctx.fillText('ЗОНА УПРАВЛЕНИЯ', (zone.cx - half) * W + 5 * k, (zone.cy + half) * H - 6 * k);
-  sctx.restore();
-
   const activeHands = hands.filter((h) => h.active && h.lm);
-  if (!activeHands.length) {
-    sctx.fillStyle = 'rgba(243,232,202,.7)';
-    sctx.font = `700 ${13 * k}px Rubik, sans-serif`;
-    sctx.textAlign = 'center';
-    sctx.fillText('Покажи руку ✋', W / 2, H / 2 + 5 * k);
-    sctx.textAlign = 'left';
-  }
+  // окно камеры — чистое: жюри видит команду, поверх только скелет руки
 
   for (const h of activeHands) {
     const L = h.lm.map(P);
@@ -695,7 +677,7 @@ function loop() {
 /* =========================================================
    Клавиатура, мышь, окно камеры
    ========================================================= */
-const CAM_SIZES = ['size-s', 'size-m', 'size-l', 'size-off'];
+const CAM_SIZES = ['size-s', 'size-m', 'size-l', 'size-xl', 'size-off'];
 function cycleCamSize() {
   const i = CAM_SIZES.findIndex((c) => camEl.classList.contains(c));
   camEl.classList.remove(...CAM_SIZES);
