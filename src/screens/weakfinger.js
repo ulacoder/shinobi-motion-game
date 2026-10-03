@@ -5,10 +5,10 @@
 import { SEALS, evaluateSeal } from '../seals.js';
 import { sfx } from '../audio.js';
 import { $ } from '../ui.js';
-import { palmsIcon } from '../icons.js';
+import { sealPalmsIcon } from '../icons.js';
 import { arena, sensei, state, setWidth, pct, moment, badFingers } from '../app/context.js';
 import { wantsBySide } from '../ghost.js';
-import { COUNTER_SEAL, FINGER_GEN, SIDE_PREP, pickWeakFinger, readPassed } from '../readhands.js';
+import { COUNTER_SEAL, FINGER_GEN, SIDE_PREP, pickWeakFinger, readPassed, fingerState } from '../readhands.js';
 
 export const READ_AT_MS = 12000; // когда в бою с боссом он «читает руки»
 const READ_MS = 7000; // сколько времени на ответ
@@ -35,16 +35,18 @@ export const weakfinger = {
     $('rh-quote').textContent = weak.guessed
       ? `«Ни одной ошибки? Проверим твой ${finger} ${where}!»`
       : `«Твой ${finger} ${where} дрожит — ${weak.count} ${weak.count % 10 >= 2 && weak.count % 10 <= 4 && (weak.count % 100 < 12 || weak.count % 100 > 14) ? 'раза' : 'раз'} подвёл!»`;
-    // ладонь: слабый палец залит красным
+    // руки сразу в форме печати-ответа, слабый палец залит красным — видно, как он должен стоять
     const fills = { left: {}, right: {} };
     fills[weak.side === 'left' ? 'left' : 'right'][weak.finger] = '#cc3325';
-    $('rh-palm').innerHTML = palmsIcon(fills.left, fills.right);
-    $('rh-sub').textContent = `Сложи «${SEALS[seal].name}» и держи ${finger} ровно — удар уйдёт в пустоту`;
+    $('rh-palm').innerHTML = sealPalmsIcon(seal, fills.left, fills.right);
+    const stateWord = fingerState(SEALS[seal].roles[0].fingers, weak.finger);
+    this.read.stateWord = stateWord;
+    $('rh-sub').textContent = `Сложи «${SEALS[seal].name}»: ${finger} ${where} — ${stateWord}. Не дай ему дрогнуть — и удар уйдёт в пустоту`;
     box.hidden = false;
     sfx.roar();
     arena.label('読!', '#ff4d3a');
     moment({ who: 'Кагэро', caption: `Твой ${finger} палец дрожит!`, sfx: 'ギロッ!', priority: 3, kanji: '読', once: 'read' });
-    sensei.show(`Кагэро бьёт по слабому месту! Сложи «${SEALS[seal].name}» — ${finger} ${where} должен стоять ровно`, 'warn', now, {
+    sensei.show(`Кагэро бьёт по слабому месту! Сложи «${SEALS[seal].name}»: ${finger} ${where} — ${stateWord}`, 'warn', now, {
       lock: 2500,
       ttl: 5000,
     });
@@ -89,7 +91,7 @@ export const weakfinger = {
       sfx.success();
       arena.label('読破!', '#6fd08c');
       moment({ caption: 'Мой палец не дрогнет!', sfx: 'ピタッ!', priority: 4, kanji: '破', once: 'read-won' });
-      sensei.show(`Отлично! ${finger} палец стоял ровно — Кагэро оглушён, +30% чакры`, 'good', now, { lock: 2000, ttl: 3000 });
+      sensei.show(`Отлично! ${finger} палец не дрогнул — Кагэро оглушён, +30% чакры`, 'good', now, { lock: 2000, ttl: 3000 });
     } else {
       box.classList.add('lost');
       $('rh-title').textContent = 'Палец дрогнул';

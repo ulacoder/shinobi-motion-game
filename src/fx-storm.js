@@ -24,6 +24,30 @@ export const stormFx = {
     this.ambientBoltAt = 6;
   },
 
+  /** Смена экрана: убираем всё, что осталось от прошлого боя (щит, ливень, трещины, отложенные вспышки). */
+  clearFx() {
+    this.shield = 0;
+    this.dim = 0;
+    this.dimUntil = 0;
+    this.rain = 0;
+    this.gusts = 0;
+    this.arcs = 0;
+    this.heat = 0;
+    this.flash = 0;
+    this.impactFrame = 0;
+    this.speedLines = 0;
+    this.hitStop = 0;
+    this.punch = 0;
+    this.skyBolts.length = 0;
+    this.scorches.length = 0;
+    this.cuts.length = 0;
+    this.cracks.length = 0;
+    this.bolts.length = 0;
+    this.rings.length = 0;
+    this.texts.length = 0;
+    this.particles.length = 0;
+  },
+
   /** Небо темнеет на время техники. */
   darken(to, sec) {
     this.dimTarget = to;
@@ -103,10 +127,7 @@ export const stormFx = {
     const want = this.time < this.dimUntil ? this.dimTarget : 0;
     this.dim += (want - this.dim) * Math.min(1, dt * (want > this.dim ? 6 : 1.6));
     if (this.dim > 0.01) {
-      const g = ctx.createLinearGradient(0, 0, 0, h);
-      g.addColorStop(0, `rgba(6,8,22,${0.8 * this.dim})`);
-      g.addColorStop(1, `rgba(6,8,22,${0.45 * this.dim})`);
-      ctx.fillStyle = g;
+      ctx.fillStyle = `rgba(6,8,22,${0.62 * this.dim})`;
       ctx.fillRect(-30, -30, w + 60, h + 60);
     }
 
@@ -289,11 +310,21 @@ export const stormFx = {
 
     // жар после взрыва — оранжевая дымка по краям
     if (this.heat > 0.01) {
-      const g = ctx.createRadialGradient(w / 2, h * 0.45, Math.min(w, h) * 0.2, w / 2, h * 0.45, Math.hypot(w, h) * 0.65);
-      g.addColorStop(0, 'rgba(255,120,40,0)');
-      g.addColorStop(1, `rgba(255,110,30,${0.45 * this.heat})`);
-      ctx.fillStyle = g;
-      ctx.fillRect(0, 0, w, h);
+      if (!this.heatSprite) {
+        const c = document.createElement('canvas');
+        c.width = 160;
+        c.height = 90;
+        const g = c.getContext('2d');
+        const rg = g.createRadialGradient(80, 40, 18, 80, 40, 92);
+        rg.addColorStop(0, 'rgba(255,120,40,0)');
+        rg.addColorStop(1, 'rgba(255,110,30,0.45)');
+        g.fillStyle = rg;
+        g.fillRect(0, 0, 160, 90);
+        this.heatSprite = c;
+      }
+      ctx.globalAlpha = this.heat;
+      ctx.drawImage(this.heatSprite, 0, 0, w, h);
+      ctx.globalAlpha = 1;
       this.heat *= Math.pow(0.15, dt);
     }
 

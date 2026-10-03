@@ -46,7 +46,10 @@ export class FrameRecorder {
 
   /** Вернуть кадры клипа в пул, когда повтор больше не нужен. */
   release(clip) {
-    for (const f of clip?.frames ?? []) this.pool.push(f.canvas);
+    for (const f of clip?.frames ?? []) {
+      f.toned = null;
+      this.pool.push(f.canvas);
+    }
   }
 
   /** Стоп-кадр для манги: копия последнего кадра (или переданного кадра клипа) и рук. */
@@ -83,10 +86,17 @@ export function drawReplayFrame(canvas, clip, p) {
   const dh = src.height * k;
   const ox = (W - dw) / 2;
   const oy = (H - dh) / 2;
-  ctx.save();
-  ctx.filter = 'grayscale(0.55) sepia(0.35) contrast(1.15) brightness(0.95)';
-  ctx.drawImage(src, ox, oy, dw, dh);
-  ctx.restore();
+  // тонирование кадра (фильтр на canvas дорогой) делаем один раз на кадр и запоминаем
+  if (!f.toned) {
+    const t = document.createElement('canvas');
+    t.width = src.width;
+    t.height = src.height;
+    const tc = t.getContext('2d');
+    tc.filter = 'grayscale(0.55) sepia(0.35) contrast(1.15) brightness(0.95)';
+    tc.drawImage(src, 0, 0);
+    f.toned = t;
+  }
+  ctx.drawImage(f.toned, ox, oy, dw, dh);
   // точки рук хранятся в координатах [0..aspect]×[0..1] — в пиксели кадра
   const P = (q) => ({ x: ox + q.x * src.height * k, y: oy + q.y * src.height * k });
 
@@ -112,9 +122,11 @@ export function drawReplayFrame(canvas, clip, p) {
         else ctx.moveTo(q.x, q.y);
         started = true;
       }
+      // свечение — широкий полупрозрачный проход вместо размытия тени
+      ctx.strokeStyle = 'rgba(255, 140, 50, 0.3)';
+      ctx.lineWidth = Math.max(9, H / 24);
+      ctx.stroke();
       ctx.strokeStyle = 'rgba(240, 182, 74, 0.85)';
-      ctx.shadowColor = 'rgba(255, 140, 50, 0.9)';
-      ctx.shadowBlur = 14;
       ctx.lineWidth = Math.max(3, H / 70);
       ctx.stroke();
     }

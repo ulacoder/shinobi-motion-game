@@ -10,6 +10,14 @@ export const COUNTER_SEAL = { thumb: 'bird', index: 'tiger', middle: 'tiger', ri
 export const FINGER_GEN = { thumb: 'большой', index: 'указательный', middle: 'средний', ring: 'безымянный', pinky: 'мизинец' };
 export const SIDE_PREP = { left: 'на левой руке', right: 'на правой руке' };
 
+/** Как должен стоять палец в печати-ответе: слова для подсказки, чтобы не было «держи ровно», когда его надо согнуть. */
+export function fingerState(sealFingers, finger) {
+  const want = sealFingers?.[finger];
+  if (want === 'down') return finger === 'thumb' ? 'прижат к ладони' : 'согнут';
+  if (want === 'up') return finger === 'thumb' || finger === 'pinky' ? 'отставлен в сторону' : 'прямой';
+  return 'на месте';
+}
+
 /** Слабый палец по отчёту ладони. Ошибок не было — Кагэро всё равно проверит безымянный на левой. */
 export function pickWeakFinger(misses = {}) {
   const w = worstFinger(misses);

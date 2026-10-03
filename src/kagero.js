@@ -366,12 +366,17 @@ export function drawKagero(ctx, t = 0, { state = 'idle', charge = 0, phase2 = fa
   ctx.fillStyle = gold(ctx, -60, -60, 60, 60);
   ctx.fill();
   stroke(ctx, 2.5);
-  ctx.shadowColor = phase2 ? '#c38bff' : '#ffcf6a';
-  ctx.shadowBlur = 24 + pulse * 14 + (phase2 ? 18 : 0);
+  // свечение кольца — радиальный градиент вместо дорогого размытия тени
+  const halo = ctx.createRadialGradient(0, 0, 30, 0, 0, 78 + pulse * 10);
+  halo.addColorStop(0, phase2 ? 'rgba(195,139,255,0.75)' : 'rgba(255,207,106,0.75)');
+  halo.addColorStop(1, 'rgba(255,180,80,0)');
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(0, 0, 88 + pulse * 10, 0, TAU);
+  ctx.fill();
   ctx.beginPath();
   ctx.arc(0, 0, 44, 0, TAU);
   stroke(ctx, 9, '#f0c35a');
-  ctx.shadowBlur = 0;
   ctx.beginPath();
   ctx.arc(0, 0, 38, 0, TAU);
   ctx.fillStyle = '#06030a';
@@ -471,8 +476,11 @@ export function drawKagero(ctx, t = 0, { state = 'idle', charge = 0, phase2 = fa
       continue;
     }
     ctx.save();
-    ctx.shadowColor = phase2 ? '#c38bff' : '#ff8a5a';
-    ctx.shadowBlur = 22 * glow;
+    const eg = ctx.createRadialGradient(d * 32, -12, 2, d * 32, -12, 34 * glow);
+    eg.addColorStop(0, phase2 ? 'rgba(195,139,255,0.8)' : 'rgba(255,138,90,0.8)');
+    eg.addColorStop(1, 'rgba(255,120,80,0)');
+    ctx.fillStyle = eg;
+    ctx.fillRect(d * 32 - 40 * glow, -12 - 40 * glow, 80 * glow, 80 * glow);
     ctx.fillStyle = phase2 ? '#f0e0ff' : '#fff0d8';
     ctx.beginPath();
     ctx.moveTo(d * 10, -6);
@@ -514,31 +522,51 @@ export function drawKagero(ctx, t = 0, { state = 'idle', charge = 0, phase2 = fa
 /**
  * Аура босса: языки тёмного пламени вокруг силуэта. Рисуется на сцене за персонажем.
  */
-export function drawKageroAura(ctx, t, { phase2 = false, charge = 0, scale = 1 } = {}) {
+let flameSprites = null;
+/** Готовые «языки пламени» (вертикальный градиент), чтобы не создавать градиенты каждый кадр. */
+function flames() {
+  if (flameSprites) return flameSprites;
+  const make = (rgb) => {
+    const c = document.createElement('canvas');
+    c.width = 48;
+    c.height = 160;
+    const g = c.getContext('2d');
+    const gr = g.createLinearGradient(0, 160, 0, 0);
+    gr.addColorStop(0, `rgba(${rgb},0.55)`);
+    gr.addColorStop(1, `rgba(${rgb},0)`);
+    g.fillStyle = gr;
+    g.beginPath();
+    g.moveTo(4, 160);
+    g.quadraticCurveTo(0, 70, 24, 0);
+    g.quadraticCurveTo(48, 70, 44, 160);
+    g.closePath();
+    g.fill();
+    return c;
+  };
+  flameSprites = { red: make('220,50,40'), purple: make('150,70,255'), ash: make('70,85,110'), ember: make('255,110,40') };
+  return flameSprites;
+}
+
+/**
+ * Аура босса: языки тёмного пламени вокруг силуэта. Рисуется на сцене за персонажем.
+ */
+export function drawKageroAura(ctx, t, { phase2 = false, charge = 0, scale = 1, color = null, count = 18 } = {}) {
+  const img = flames()[color ?? (phase2 ? 'purple' : 'red')];
   ctx.save();
   ctx.globalCompositeOperation = 'lighter';
-  const n = 18;
-  const base = phase2 ? [150, 70, 255] : [220, 50, 40];
+  ctx.globalAlpha = Math.min(1, 0.65 + charge * 0.5);
+  const n = count;
   for (let i = 0; i < n; i++) {
     const a = Math.PI * (0.95 + (i / (n - 1)) * 1.1);
     const flick = Math.sin(t * 7 + i * 1.9) * 0.5 + 0.5;
     const r0 = 150 * scale;
-    const len = (70 + flick * 60 + charge * 90 + (phase2 ? 40 : 0)) * scale;
-    const x0 = Math.cos(a) * r0;
-    const y0 = Math.sin(a) * r0 * 1.15 + 40 * scale;
-    const x1 = Math.cos(a) * (r0 + len) + Math.sin(t * 3 + i) * 12 * scale;
-    const y1 = Math.sin(a) * (r0 + len) * 1.15 + 40 * scale - len * 0.35;
-    const wd = (16 + flick * 10) * scale;
-    const g = ctx.createLinearGradient(x0, y0, x1, y1);
-    g.addColorStop(0, `rgba(${base.join(',')},${0.32 + charge * 0.3})`);
-    g.addColorStop(1, `rgba(${base.join(',')},0)`);
-    ctx.fillStyle = g;
-    ctx.beginPath();
-    ctx.moveTo(x0 - Math.sin(a) * wd, y0 + Math.cos(a) * wd);
-    ctx.quadraticCurveTo((x0 + x1) / 2 + Math.sin(t * 5 + i) * 14 * scale, (y0 + y1) / 2, x1, y1);
-    ctx.quadraticCurveTo((x0 + x1) / 2 - Math.sin(t * 4 + i) * 14 * scale, (y0 + y1) / 2, x0 + Math.sin(a) * wd, y0 - Math.cos(a) * wd);
-    ctx.closePath();
-    ctx.fill();
+    const len = (90 + flick * 70 + charge * 90 + (phase2 ? 40 : 0)) * scale;
+    const wd = (34 + flick * 14) * scale;
+    ctx.save();
+    ctx.translate(Math.cos(a) * r0, Math.sin(a) * r0 * 1.15 + 40 * scale);
+    ctx.rotate(a + Math.PI / 2 + Math.sin(t * 3 + i) * 0.12);
+    ctx.drawImage(img, -wd / 2, -len, wd, len);
+    ctx.restore();
   }
   ctx.restore();
 }

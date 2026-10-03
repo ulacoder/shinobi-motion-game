@@ -4016,3 +4016,51 @@ button {
 .fighter .portrait {
   border-radius: 6px;
 }
+
+/* кнопка запуска — запасная: прячется, пока камера и распознавание стартуют сами */
+.btn-primary[hidden] {
+  display: none;
+}
+
+/* бой на ноутбуке: подсказки сенсея — слева над камерой, а не поверх врага и полосок здоровья */
+@media (min-width: 821px) and (min-aspect-ratio: 1/1) {
+  #app[data-screen='battle'] .sensei {
+    top: auto;
+    left: var(--gutter);
+    bottom: calc(var(--gutter) + min(34vw, 520px, calc(40vh * var(--cam-ar))) / var(--cam-ar) + 12px);
+    transform: none;
+    width: min(34vw, 520px, calc(40vh * var(--cam-ar)));
+    max-width: none;
+    animation: sensei-side 0.25s ease-out;
+  }
+
+  #app[data-screen='battle'] .sensei p {
+    font-size: clamp(0.95rem, 1.2vw, 1.05rem);
+  }
+}
+
+@keyframes sensei-side {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* панели «Кагэро крадёт / читает руки» — между колонкой камеры слева и свитком техник справа */
+@media (min-width: 821px) and (min-aspect-ratio: 1/1) {
+  #app[data-screen='battle'] .steal {
+    left: calc(50% + 66px);
+    width: min(480px, 37vw);
+  }
+}
+
+@media (min-width: 821px) and (min-aspect-ratio: 1/1) {
+  #app[data-screen='battle'] .steal-title {
+    font-size: clamp(1.25rem, 2vw, 1.7rem);
+    padding-right: 56px;
+  }
+}

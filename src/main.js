@@ -40,14 +40,19 @@ async function boot() {
   const btn = $('btn-start');
   const status = $('intro-status');
   btn.disabled = true;
+  btn.hidden = true;
   unlockAudio();
   try {
-    status.textContent = 'Включаю камеру…';
+    // камера и распознавание рук стартуют параллельно — без кнопок и ожидания друг друга
+    const trackerReady = createHandTracker((t) => (status.textContent = t));
+    trackerReady.catch(() => {});
+    status.textContent = 'Включаю камеру… Если браузер спросит — разреши доступ';
     await startCamera(video);
     state.aspect = video.videoWidth / video.videoHeight || 16 / 9;
     app.style.setProperty('--cam-ar', String(state.aspect));
     loadAudioManifest();
-    tracker = await createHandTracker((t) => (status.textContent = t));
+    status.textContent = 'Загружаю распознавание рук…';
+    tracker = await trackerReady;
     status.textContent = '';
     go('menu');
   } catch (err) {
@@ -58,6 +63,8 @@ async function boot() {
     booting = false;
   } finally {
     btn.disabled = false;
+    // кнопка — только запасной путь, если автозапуск не сработал
+    btn.hidden = app.dataset.screen !== 'intro';
   }
 }
 
@@ -83,13 +90,8 @@ if (import.meta.env.PROD && 'serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js').catch(() => {});
 }
 
-// Если доступ к камере уже был разрешён раньше — стартуем без клика.
-navigator.permissions
-  ?.query({ name: 'camera' })
-  .then((p) => {
-    if (p.state === 'granted') boot();
-  })
-  .catch(() => {});
+// Всё стартует само: камера (браузер один раз спросит разрешение) и модель распознавания рук.
+boot();
 
 // Отладка: клавиша D или ?debug в адресе — показывает сырые признаки пальцев.
 // Запасное управление с клавиатуры: 1–5 — пункты меню и итогов, пробел/Enter — следующая реплика.

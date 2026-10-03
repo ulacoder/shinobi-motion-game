@@ -52,7 +52,7 @@ function hand(fingers, cx, cy, { mirror = false, scale = 1, fills = null, ok = f
   } else {
     // прижат поперёк ладони
     const x = dir === 1 ? cx - 14 * s : cx - 2 * s;
-    parts.push(`<rect x="${x}" y="${cy + 1 * s}" width="${16 * s}" height="${7 * s}" rx="${3.5 * s}" />`);
+    parts.push(`<rect x="${x}" y="${cy + 1 * s}" width="${16 * s}" height="${7 * s}" rx="${3.5 * s}"${fill('thumb')} />`);
   }
   return parts.join('');
 }
@@ -131,6 +131,25 @@ export function palmsIcon(fillsLeft, fillsRight, labels = { left: {}, right: {} 
     hand(open, L.cx, L.cy, { scale: S, fills: fillsLeft }) + hand(open, R.cx, R.cy, { scale: S, mirror: true, fills: fillsRight });
   return `<svg class="palms" viewBox="0 0 260 200" role="img" aria-label="Отчёт ладони: ошибки по пальцам">
     <g fill="${SKIN}" stroke="${INK}" stroke-width="3" stroke-linejoin="round">${body}</g>${text('left', L)}${text('right', R)}
+    <text x="${L.cx}" y="196" text-anchor="middle" font-size="14" font-weight="700" fill="#5d4d42">левая</text>
+    <text x="${R.cx}" y="196" text-anchor="middle" font-size="14" font-weight="700" fill="#5d4d42">правая</text>
+  </svg>`;
+}
+
+/**
+ * Печать, которой отбиваешь удар Кагэро: обе руки в нужной форме, слабый палец залит красным —
+ * сразу видно, в каком положении он должен стоять (согнут у Тигра, отставлен у Птицы).
+ */
+export function sealPalmsIcon(sealId, fillsLeft, fillsRight) {
+  const seal = SEALS[sealId];
+  const S = 2.1;
+  const L = { cx: 62, cy: 120 };
+  const R = { cx: 198, cy: 120 };
+  const body =
+    hand(seal.roles[0].fingers, L.cx, L.cy, { scale: S, fills: fillsLeft }) +
+    hand(seal.roles[1].fingers, R.cx, R.cy, { scale: S, mirror: true, fills: fillsRight });
+  return `<svg class="palms" viewBox="0 0 260 200" role="img" aria-label="${seal.name}: как держать руки">
+    <g fill="${SKIN}" stroke="${INK}" stroke-width="3" stroke-linejoin="round">${body}</g>
     <text x="${L.cx}" y="196" text-anchor="middle" font-size="14" font-weight="700" fill="#5d4d42">левая</text>
     <text x="${R.cx}" y="196" text-anchor="middle" font-size="14" font-weight="700" fill="#5d4d42">правая</text>
   </svg>`;

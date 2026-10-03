@@ -131,10 +131,16 @@ export const scenery = {
         this.pine(x, yAt(x) + 10, h * (0.06 + rnd() * 0.05), S.layers[2]);
       }
     } else if (this.place === 'eclipse') {
+      // горящий город клана: замок и кварталы, на крышах пламя (огонь и дым оживают в drawAmbient)
+      this.fires = [];
+      this.town(w * 0.22, w * 1.02, yAt, '#0d0306', rnd, { burning: true, maxH: h * 0.11 });
       this.castle(w * 0.14, yAt(w * 0.14) + 8, h * 0.26, '#0a0206');
-      for (let i = 0; i < 4; i++) {
-        const x = w * (0.72 + rnd() * 0.26);
-        this.deadTree(x, yAt(x) + 6, h * (0.08 + rnd() * 0.06), '#12030a');
+      this.fires.push({ x: w * 0.14, y: yAt(w * 0.14) - h * 0.2, s: 1.5, layer: 'far' });
+      this.fires.push({ x: w * 0.1, y: yAt(w * 0.1) - h * 0.08, s: 1.2, layer: 'far' });
+      this.fires.push({ x: w * 0.18, y: yAt(w * 0.18) - h * 0.1, s: 1.1, layer: 'far' });
+      for (let i = 0; i < 3; i++) {
+        const x = w * (0.02 + rnd() * 0.08);
+        this.deadTree(x, yAt(x) + 6, h * (0.07 + rnd() * 0.05), '#12030a');
       }
     } else if (this.place === 'forest') {
       for (let i = 0; i < 16; i++) {
@@ -157,11 +163,50 @@ export const scenery = {
       this.toro(w * 0.08, h * 0.93, h * 0.12);
     } else if (this.place === 'night') {
       this.torii(w * 0.16, yAt(w * 0.16) + 10, h * 0.13, '#0d0f2a');
+      // деревня внизу: тёплые окна
+      this.town(w * 0.22, w * 0.36, yAt, '#0e1030', rnd, { light: '#ffcf7a', maxH: h * 0.07 });
+      this.town(w * 0.64, w * 1.02, yAt, '#0e1030', rnd, { light: '#ffcf7a', maxH: h * 0.07 });
     } else if (this.place === 'eclipse') {
       for (let i = 0; i < 5; i++) {
         const x = w * (rnd() < 0.5 ? rnd() * 0.25 : 0.75 + rnd() * 0.25);
         this.spike(x, yAt(x) + 14, h * (0.05 + rnd() * 0.06), '#0b0207');
       }
+    }
+  },
+
+  /** Квартал домиков с загнутыми крышами вдоль гребня. burning — окна горят красным, на крышах огонь. */
+  town(x0, x1, yAt, color, rnd, { burning = false, light = '#ffcf7a', maxH = 60 } = {}) {
+    const { ctx, w } = this;
+    let x = x0;
+    while (x < x1) {
+      const hw = w * (0.026 + rnd() * 0.03);
+      const hh = maxH * (0.45 + rnd() * 0.55);
+      const base = yAt(x + hw / 2) + 8;
+      const top = base - hh;
+      ctx.fillStyle = color;
+      ctx.fillRect(x, top, hw, hh + 20);
+      // крыша-иримоя с загнутыми краями
+      const broken = burning && rnd() < 0.3;
+      ctx.beginPath();
+      ctx.moveTo(x - hw * 0.18, top + 3);
+      ctx.quadraticCurveTo(x + hw * 0.1, top - 2, x + hw * 0.2, top - hh * 0.32);
+      if (broken) {
+        ctx.lineTo(x + hw * 0.42, top - hh * 0.16);
+        ctx.lineTo(x + hw * 0.55, top - hh * 0.3);
+      }
+      ctx.lineTo(x + hw * 0.8, top - hh * 0.32);
+      ctx.quadraticCurveTo(x + hw * 0.9, top - 2, x + hw * 1.18, top + 3);
+      ctx.closePath();
+      ctx.fill();
+      // окна: тёплый свет или отблеск пожара
+      const wins = Math.max(1, Math.round(hw / 16));
+      for (let i = 0; i < wins; i++) {
+        if (rnd() < 0.35) continue;
+        ctx.fillStyle = burning ? (rnd() < 0.5 ? 'rgba(255,110,40,0.9)' : 'rgba(255,180,80,0.8)') : rgba(light, 0.85);
+        ctx.fillRect(x + (i + 0.3) * (hw / wins), top + hh * 0.3, (hw / wins) * 0.4, hh * 0.22);
+      }
+      if (burning && rnd() < 0.55) this.fires.push({ x: x + hw / 2, y: top - hh * 0.25, s: 0.6 + rnd() * 0.7, layer: 'far' });
+      x += hw * (1.05 + rnd() * 0.5);
     }
   },
 
@@ -568,6 +613,56 @@ export const scenery = {
 
   // ---------- живой слой поверх кэша ----------
 
+  makeFlame() {
+    const c = document.createElement('canvas');
+    c.width = 32;
+    c.height = 64;
+    const g = c.getContext('2d');
+    const gr = g.createLinearGradient(0, 64, 0, 0);
+    gr.addColorStop(0, 'rgba(255,240,170,0.95)');
+    gr.addColorStop(0.35, 'rgba(255,150,50,0.85)');
+    gr.addColorStop(1, 'rgba(200,40,20,0)');
+    g.fillStyle = gr;
+    g.beginPath();
+    g.moveTo(2, 64);
+    g.quadraticCurveTo(0, 30, 16, 0);
+    g.quadraticCurveTo(32, 30, 30, 64);
+    g.closePath();
+    g.fill();
+    this.flameSprite = c;
+    return c;
+  },
+
+  /** Дым пожара: снизу подсвечен огнём. */
+  makeCitySmoke() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 96;
+    const g = c.getContext('2d');
+    const rg = g.createRadialGradient(48, 56, 4, 48, 48, 48);
+    rg.addColorStop(0, 'rgba(20,8,12,0.95)');
+    rg.addColorStop(0.6, 'rgba(14,6,10,0.75)');
+    rg.addColorStop(1, 'rgba(10,4,8,0)');
+    g.fillStyle = rg;
+    g.fillRect(0, 0, 96, 96);
+    this.citySmoke = c;
+    return c;
+  },
+
+  makeHorizon() {
+    const c = document.createElement('canvas');
+    c.width = 8;
+    c.height = 64;
+    const g = c.getContext('2d');
+    const gr = g.createLinearGradient(0, 0, 0, 64);
+    gr.addColorStop(0, 'rgba(255,80,30,0)');
+    gr.addColorStop(0.75, 'rgba(255,90,30,1)');
+    gr.addColorStop(1, 'rgba(255,60,20,0)');
+    g.fillStyle = gr;
+    g.fillRect(0, 0, 8, 64);
+    this.sprites.horizon = c;
+    return c;
+  },
+
   /** Полосы тумана плывут между планами: 0 — за ближними горами, 1 — у самой земли. */
   drawFog(dt, layer) {
     if (this.quality === 0) return;
@@ -657,20 +752,39 @@ export const scenery = {
       const r0 = Math.min(w, h) * 0.1;
       ctx.save();
       ctx.globalCompositeOperation = 'lighter';
-      for (let i = 0; i < 24; i++) {
-        const a = (i / 24) * TAU + t * 0.08;
-        const len = r0 * (0.25 + 0.2 * (0.5 + 0.5 * Math.sin(t * 2.3 + i * 2.1)));
-        const g = ctx.createLinearGradient(ex + Math.cos(a) * r0, ey + Math.sin(a) * r0, ex + Math.cos(a) * (r0 + len), ey + Math.sin(a) * (r0 + len));
-        g.addColorStop(0, 'rgba(255,210,120,0.5)');
-        g.addColorStop(1, 'rgba(255,120,60,0)');
-        ctx.fillStyle = g;
-        ctx.beginPath();
-        ctx.moveTo(ex + Math.cos(a - 0.07) * r0, ey + Math.sin(a - 0.07) * r0);
-        ctx.quadraticCurveTo(ex + Math.cos(a + 0.05) * (r0 + len * 0.6), ey + Math.sin(a + 0.05) * (r0 + len * 0.6), ex + Math.cos(a) * (r0 + len), ey + Math.sin(a) * (r0 + len));
-        ctx.lineTo(ex + Math.cos(a + 0.07) * r0, ey + Math.sin(a + 0.07) * r0);
-        ctx.closePath();
-        ctx.fill();
+      if (!this.coronaSprite || this.coronaSprite.r0 !== r0) {
+        const R = r0 * 1.6;
+        const c = document.createElement('canvas');
+        c.width = c.height = Math.ceil(R * 2);
+        const g = c.getContext('2d');
+        g.translate(R, R);
+        for (let i = 0; i < 24; i++) {
+          const a = (i / 24) * TAU;
+          const len = r0 * (0.3 + 0.25 * ((i * 7) % 5) / 5);
+          const gr = g.createLinearGradient(Math.cos(a) * r0, Math.sin(a) * r0, Math.cos(a) * (r0 + len), Math.sin(a) * (r0 + len));
+          gr.addColorStop(0, 'rgba(255,210,120,0.55)');
+          gr.addColorStop(1, 'rgba(255,120,60,0)');
+          g.fillStyle = gr;
+          g.beginPath();
+          g.moveTo(Math.cos(a - 0.07) * r0, Math.sin(a - 0.07) * r0);
+          g.quadraticCurveTo(Math.cos(a + 0.05) * (r0 + len * 0.6), Math.sin(a + 0.05) * (r0 + len * 0.6), Math.cos(a) * (r0 + len), Math.sin(a) * (r0 + len));
+          g.lineTo(Math.cos(a + 0.07) * r0, Math.sin(a + 0.07) * r0);
+          g.closePath();
+          g.fill();
+        }
+        c.r0 = r0;
+        this.coronaSprite = c;
       }
+      // корона медленно вращается и «дышит»
+      const cs = this.coronaSprite;
+      const sc = 1 + 0.04 * Math.sin(t * 1.3);
+      ctx.save();
+      ctx.translate(ex, ey);
+      ctx.rotate(t * 0.08);
+      ctx.scale(sc, sc);
+      ctx.globalAlpha = 0.85 + 0.15 * Math.sin(t * 2.3);
+      ctx.drawImage(cs, -cs.width / 2, -cs.height / 2);
+      ctx.restore();
       if (this.lavaPaths) {
         const glowA = 0.35 + 0.25 * Math.sin(t * 1.7);
         ctx.lineJoin = 'round';
@@ -685,6 +799,70 @@ export const scenery = {
           ctx.lineWidth = 2;
           ctx.stroke();
         }
+      }
+      ctx.restore();
+    }
+
+    // горящий город: зарево над горизонтом, пламя на крышах, столбы дыма
+    if (this.place === 'eclipse' && this.fires) {
+      const off = this.farOffset ?? 0;
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      const glowA = 0.32 + 0.08 * Math.sin(t * 1.3) + 0.05 * Math.sin(t * 3.7);
+      ctx.globalAlpha = glowA;
+      ctx.drawImage(this.sprites.horizon ?? this.makeHorizon(), 0, h * 0.38, w, h * 0.36);
+      ctx.globalAlpha = 1;
+      const fl = this.flameSprite ?? this.makeFlame();
+      const step = this.quality === 0 ? 2 : 1;
+      for (let i = 0; i < this.fires.length; i += step) {
+        const f = this.fires[i];
+        const x = f.x + off;
+        // пожар — пять рваных языков разной высоты, а не одна «свечка»
+        for (let k = 0; k < 5; k++) {
+          const flick = 0.6 + 0.4 * Math.abs(Math.sin(t * (7 + k * 2.3) + i * 1.7 + k * 1.3));
+          const fh = 70 * f.s * flick * (k === 2 ? 1.25 : 0.75 + (k % 2) * 0.2);
+          const fw = 26 * f.s;
+          const dx = (k - 2) * 11 * f.s + Math.sin(t * 6 + i + k) * 3;
+          ctx.save();
+          ctx.translate(x + dx, f.y + 6);
+          ctx.rotate((k - 2) * 0.12 + Math.sin(t * 4 + k + i) * 0.08);
+          ctx.drawImage(fl, -fw / 2, -fh, fw, fh);
+          ctx.restore();
+        }
+        ctx.drawImage(this.sprites.glow, x - 70 * f.s, f.y - 80 * f.s, 140 * f.s, 140 * f.s);
+      }
+      ctx.restore();
+      // дым поднимается над пожарами и сносится ветром
+      if (this.quality > 0) {
+        for (let i = 0; i < this.fires.length; i += 2) {
+          const f = this.fires[i];
+          for (let k = 0; k < 3; k++) {
+            const q = (t * 0.07 + k / 3 + i * 0.13) % 1;
+            const r = (40 + q * 160) * f.s;
+            ctx.globalAlpha = 0.85 * Math.sin(q * Math.PI);
+            ctx.drawImage(this.citySmoke ?? this.makeCitySmoke(), f.x + off + q * 80 * f.s - r, f.y - 40 - q * h * 0.45 - r, r * 2, r * 2);
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    // ночь: в небо поднимаются бумажные фонарики
+    if (this.place === 'night') {
+      this.skyLanterns ??= Array.from({ length: 9 }, (_, i) => ({ x: 0.05 + (i / 9) * 0.9 + Math.random() * 0.05, p: Math.random(), v: 0.012 + Math.random() * 0.01 }));
+      ctx.save();
+      for (const L of this.skyLanterns) {
+        L.p = (L.p + L.v * dt) % 1;
+        const x = L.x * w + Math.sin(t * 0.6 + L.x * 9) * 12;
+        const y = h * (0.75 - L.p * 0.7);
+        const a = Math.min(1, L.p * 5, (1 - L.p) * 4);
+        const sz = 5 + (1 - L.p) * 5;
+        ctx.globalAlpha = a * 0.9;
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.drawImage(this.sprites.glow, x - sz * 3, y - sz * 3, sz * 6, sz * 6);
+        ctx.globalCompositeOperation = 'source-over';
+        ctx.fillStyle = '#ffb35a';
+        ctx.fillRect(x - sz / 2, y - sz * 0.7, sz, sz * 1.3);
       }
       ctx.restore();
     }

@@ -94,6 +94,8 @@ export function go(screen, arg) {
   app.dataset.screen = screen;
   state.controller = screens[screen] ?? null;
   camSeal.hidden = true;
+  // эффекты прошлого экрана (например, водяной щит в конце боя) не переезжают на следующий
+  arena.clearFx();
   state.controller?.enter?.(arg);
   sfx.select();
 }

@@ -76,13 +76,22 @@ export class Arena {
   /** Следит за временем кадра и понижает/повышает качество, чтобы игра не лагала. */
   adapt(dt) {
     this.frameTimes.push(dt);
-    if (this.frameTimes.length < 90) return;
+    // при тяжёлом эффекте реагируем быстро (через ~0,5 с), а повышаем качество осторожно
+    if (this.frameTimes.length < 30) return;
     const sorted = [...this.frameTimes].sort((a, b) => a - b);
     const p80 = sorted[Math.floor(sorted.length * 0.8)];
     this.frameTimes.length = 0;
     const was = this.quality;
-    if (p80 > 1 / 42 && this.quality > 0) this.quality -= 1;
-    else if (p80 < 1 / 58 && this.quality < 2) this.quality += 1;
+    // смена качества перестраивает фон — это заметная пауза, поэтому повышаем только после
+    // ~4 секунд ровной работы и не раньше чем через 8 секунд после понижения
+    this.goodWindows = p80 < 1 / 58 ? (this.goodWindows ?? 0) + 1 : 0;
+    if (p80 > 1 / 42 && this.quality > 0) {
+      this.quality -= 1;
+      this.loweredAt = this.time;
+    } else if (this.goodWindows >= 8 && this.quality < 2 && this.time - (this.loweredAt ?? -99) > 8) {
+      this.quality += 1;
+      this.goodWindows = 0;
+    }
     if (this.quality !== was) this.resize();
   }
 
@@ -234,6 +243,7 @@ export class Arena {
     const drift = this.reduceMotion ? 0 : Math.sin(this.time * 0.18);
     const bob = this.reduceMotion ? 0 : Math.sin(this.time * 0.27) * 2;
     ctx.drawImage(this.bgCache, -20 + drift * 4, -20 + bob * 0.5, w + 40, h + 40);
+    this.farOffset = drift * 4;
 
     if (this.place === 'night' || this.place === 'eclipse') {
       const step = this.quality === 0 ? 3 : 1;
@@ -390,6 +400,8 @@ export class Arena {
 
     // у Кагэро — языки тёмного пламени за спиной
     if (e.look === 'warlord' && this.quality > 0) drawKageroAura(ctx, this.time, { phase2: e.phase2, charge: charging ? e.charge : 0 });
+    // у пешек своя аура: пепельный дым у подпешек, тлеющие угли у Близнецов Пепла (ярче при заряде удара)
+    else if (this.quality > 0) drawKageroAura(ctx, this.time, { color: e.look === 'oni' ? 'ember' : 'ash', scale: 0.75, count: 12, charge: charging ? e.charge : 0 });
     // Персонаж рисуется в отдельный холст ~20 раз в секунду, а на сцену — одной картинкой.
     const sprite = this.enemySprite(e, s);
     ctx.drawImage(sprite.canvas, SPRITE.x0, SPRITE.y0, SPRITE.w, SPRITE.h);
@@ -442,7 +454,7 @@ export class Arena {
     g.clearRect(0, 0, c.canvas.width, c.canvas.height);
     g.setTransform(scale, 0, 0, scale, -SPRITE.x0 * scale, -SPRITE.y0 * scale);
     drawCharacter(g, e.look, this.time, e);
-    if (this.quality > 0) this.lightSprite(c);
+    if (this.quality > 1) this.lightSprite(c);
     c.key = key;
     c.at = this.time;
     this.enemyCache = c;
