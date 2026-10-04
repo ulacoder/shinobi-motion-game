@@ -104,7 +104,7 @@ function layout() {
   deck.x = (W - deck.w) / 2;
   deck.y = (H - deck.h) / 2;
   Object.assign(deckEl.style, { left: `${deck.x}px`, top: `${deck.y}px`, width: `${deck.w}px`, height: `${deck.h}px` });
-  ink.width = W * dpr; ink.height = H * dpr;
+  ink.width = W * dpr; ink.height = H * dpr; inkDirty = true;
   clampView(); applyView();
 }
 addEventListener('resize', layout);
@@ -415,15 +415,21 @@ function detectSwipe(h, now) {
 /* =========================================================
    Рендер: курсоры и лазер
    ========================================================= */
+let inkDirty = true;
 function renderOverlay(now) {
   const W = innerWidth, H = innerHeight;
-  ictx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ictx.clearRect(0, 0, W, H);
+  for (const h of hands) while (h.trail.length && now - h.trail[0].t > CFG.laserTrailMs) h.trail.shift();
+  const hasTrail = hands.some((h) => h.trail.length >= 2);
+  // производительность: полноэкранный холст очищаем только если на нём что-то было или будет
+  if (hasTrail || inkDirty) {
+    ictx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ictx.clearRect(0, 0, W, H);
+    inkDirty = hasTrail;
+  }
   ictx.lineCap = 'round'; ictx.lineJoin = 'round';
 
   // лазерный след
   for (const h of hands) {
-    while (h.trail.length && now - h.trail[0].t > CFG.laserTrailMs) h.trail.shift();
     const tr = h.trail;
     if (tr.length < 2) continue;
     ictx.shadowColor = '#ff3a1e'; ictx.shadowBlur = 14;
@@ -441,21 +447,24 @@ function renderOverlay(now) {
   for (const h of hands) {
     const el = h.el;
     const on = showCursors && h.active;
-    el.classList.toggle('on', on);
-    if (!on) continue;
+    if (!on) { if (el.classList.contains('on')) el.classList.remove('on'); continue; }
     el.style.transform = `translate(${h.x}px, ${h.y}px)`;
-    el.className = `cursor on m-${h.gesture}` + (now < h.labelUntil && h.gesture !== 'none' ? ' show-label' : '');
+    const cls = `cursor on m-${h.gesture}` + (now < h.labelUntil && h.gesture !== 'none' ? ' show-label' : '');
+    if (el.className !== cls) el.className = cls;
     const G = GESTURES[h.gesture];
-    el.querySelector('.c-label').textContent = `${G.emoji} ${h.gesture === 'palm' && view.s > 1.01 ? 'Осмотр' : G.name}`;
+    const label = `${G.emoji} ${h.gesture === 'palm' && view.s > 1.01 ? 'Осмотр' : G.name}`;
+    if (h.labelText !== label) { h.labelText = label; (h.labelEl ??= el.querySelector('.c-label')).textContent = label; }
   }
 }
 
 /* =========================================================
    Скелет руки в окне камеры
    ========================================================= */
+const skelRect = { width: 0, height: 0 };
+new ResizeObserver(([e]) => { skelRect.width = e.contentRect.width; skelRect.height = e.contentRect.height; }).observe(skel);
 function renderSkeleton(now) {
   if (camEl.hidden || camEl.classList.contains('size-off')) return;
-  const r = skel.getBoundingClientRect();
+  const r = skelRect.width ? skelRect : skel.getBoundingClientRect();
   const cw = Math.round(r.width * dpr), ch = Math.round(r.height * dpr);
   if (skel.width !== cw || skel.height !== ch) { skel.width = cw; skel.height = ch; }
   const W = cw, H = ch, k = dpr * (r.width / 320) ** 0.5;
@@ -498,9 +507,13 @@ function renderSkeleton(now) {
     sctx.strokeStyle = 'rgba(5,6,15,.75)'; sctx.lineWidth = 7 * k;
     sctx.beginPath(); bones.forEach(([a, b]) => { sctx.moveTo(...L[a]); sctx.lineTo(...L[b]); }); sctx.stroke();
     sctx.lineWidth = 3.2 * k; sctx.shadowBlur = 10 * k;
-    for (const [a, b, c] of bones) {
+    const byColor = new Map();
+    for (const [a, b, c] of bones) { if (!byColor.has(c)) byColor.set(c, []); byColor.get(c).push(a, b); }
+    for (const [c, seg] of byColor) {
       sctx.strokeStyle = c; sctx.shadowColor = c;
-      sctx.beginPath(); sctx.moveTo(...L[a]); sctx.lineTo(...L[b]); sctx.stroke();
+      sctx.beginPath();
+      for (let j = 0; j < seg.length; j += 2) { sctx.moveTo(...L[seg[j]]); sctx.lineTo(...L[seg[j + 1]]); }
+      sctx.stroke();
     }
     sctx.shadowBlur = 0;
 
@@ -589,7 +602,8 @@ function renderPills() {
     const el = pills[k];
     if (!h.active) {
       el.classList.remove('active');
-      el.innerHTML = `<b>—</b><span>${k === 0 ? 'рука не видна' : ''}</span>`;
+      const idle = `<b>—</b><span>${k === 0 ? 'рука не видна' : ''}</span>`;
+      if (el.innerHTML !== idle) el.innerHTML = idle;
       return;
     }
     const G = GESTURES[h.gesture];

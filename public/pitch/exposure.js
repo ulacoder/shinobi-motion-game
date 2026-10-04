@@ -12,6 +12,11 @@ const LIMITS = { gain: [0.5, 3.2], contrast: [0.7, 1.8] };
 const TARGET = 0.5;          // желаемая яркость ладони после коррекции (0..1)
 const PROC_W = 640;          // ширина кадра для распознавания — больше не нужно, а так быстрее
 const STORAGE_KEY = 'pitch-expo';
+// Замер света копирует кадр камеры в память процессора — это дорого, поэтому делаем его раз в MEASURE_EVERY кадров.
+// Коэффициенты сглаживания пересчитаны так, чтобы скорость подстройки во времени осталась прежней (была: каждые 2 кадра).
+const MEASURE_EVERY = 6;
+const STEPS = MEASURE_EVERY / 2;
+const rate = (a) => 1 - (1 - a) ** STEPS;
 
 const HINTS = {
   dark: '🌙 Темно — включи свет перед собой',
@@ -119,7 +124,7 @@ export function setupExposure({ video, frame, panel, hintEl, getHandBoxes, toast
       }
       hm = sum / boxes.length;
     }
-    const a = 0.15;
+    const a = rate(0.15);
     m.frame += (fm - m.frame) * a;
     m.std += (fs - m.std) * a;
     m.bright += (fb - m.bright) * a;
@@ -131,8 +136,8 @@ export function setupExposure({ video, frame, panel, hintEl, getHandBoxes, toast
     const measured = m.hand != null ? 0.75 * m.hand + 0.25 * m.frame : m.frame;
     const tg = clamp(TARGET / Math.max(measured, 0.03), ...LIMITS.gain);
     const tc = clamp(0.2 / Math.max(m.std * Math.min(tg, 2), 0.05), 1, 1.3);
-    st.gain += (tg - st.gain) * 0.08;
-    st.contrast += (tc - st.contrast) * 0.05;
+    st.gain += (tg - st.gain) * rate(0.08);
+    st.contrast += (tc - st.contrast) * rate(0.05);
   }
 
   function evalHint(now) {
@@ -167,7 +172,7 @@ export function setupExposure({ video, frame, panel, hintEl, getHandBoxes, toast
     const W = PROC_W, H = Math.round((PROC_W * vh) / vw);
     if (frame.width !== W || frame.height !== H) { frame.width = W; frame.height = H; }
 
-    if (++frameN % 2 === 0) {
+    if (++frameN % MEASURE_EVERY === 0) {
       measure();
       if (st.mode === 'auto') autoAdjust();
       evalHint(now);

@@ -190,7 +190,6 @@ button { font-family: inherit; }
 #scan {
   position: absolute; inset: 0; pointer-events: none;
   background: repeating-linear-gradient(0deg, rgba(0,0,0,.12) 0 1px, transparent 1px 3px);
-  mix-blend-mode: multiply;
 }
 #camHud { display: flex; gap: 6px; padding: 6px; }
 .hand-pill {
@@ -212,7 +211,7 @@ button { font-family: inherit; }
   overflow-y: auto;
   transition: opacity .3s;
 }
-#intro.hidden { opacity: 0; pointer-events: none; }
+#intro.hidden { opacity: 0; pointer-events: none; visibility: hidden; transition: opacity .3s, visibility 0s .3s; }
 .intro-card {
   width: min(880px, 100%);
   background: linear-gradient(180deg, var(--navy-2), var(--navy));
