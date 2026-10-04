@@ -484,13 +484,6 @@ function renderSkeleton(now) {
   sctx.restore();
 
   const activeHands = hands.filter((h) => h.active && h.lm);
-  if (!activeHands.length) {
-    sctx.fillStyle = 'rgba(243,232,202,.7)';
-    sctx.font = `700 ${13 * k}px Rubik, sans-serif`;
-    sctx.textAlign = 'center';
-    sctx.fillText('Покажи руку ✋', W / 2, H / 2 + 5 * k);
-    sctx.textAlign = 'left';
-  }
 
   for (const h of activeHands) {
     const L = h.lm.map(P);
